@@ -1,0 +1,9 @@
+[package]
+name = "injm"
+description = "A lightweight CLI tool for code injection"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+tree-sitter-language-pack = "1.12.0"
