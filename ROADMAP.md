@@ -6,11 +6,11 @@
 
 ## v0.1.0
 
-- [ ] Use `clap` to create the CLI interface
-- [ ] Detect programming language using `treesitter`
-- [ ] Extract comments from a giving file using `treesitter`
-- [ ] Replace content between comments `injm begin` and `injm end` with stdin input
-- [ ] Write the result back to the file using `-o` or `--output` flag
+- [x] Use `clap` to create the CLI interface
+- [x] Detect programming language using `treesitter`
+- [x] Extract comments from a giving file using `treesitter`
+- [x] Replace content between comments `injm begin` and `injm end` with stdin input
+- [x] Write the result back to the file using `-o` or `--output` flag
 
 The usage looks like:
 
