@@ -1,6 +1,6 @@
 [package]
 name = "injm"
-description = "A lightweight CLI tool for code injection"
+description = "A CLI tool that injects content into marked regions in source files."
 version = "0.1.0"
 edition = "2024"
 license = "MIT"

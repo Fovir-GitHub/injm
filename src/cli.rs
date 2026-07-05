@@ -2,7 +2,11 @@ use clap::Parser;
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "injm", about = "Inject content into marked region", version)]
+#[command(
+    name = "injm",
+    about = "Inject stdin content into marked regions between `injm begin` and `injm end` comments.",
+    version
+)]
 pub struct Cli {
     #[arg(short, long)]
     pub output: PathBuf,
