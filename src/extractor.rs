@@ -1,5 +1,3 @@
-use std::{fs, path::Path};
-
 use tree_sitter_language_pack::{ProcessConfig, process};
 
 use crate::error::Result;
@@ -10,9 +8,7 @@ pub struct Comment {
     pub end_line: usize,
 }
 
-pub fn extract_comments(path: &Path, lang: &str) -> Result<Vec<Comment>> {
-    // Read file contents.
-    let content = fs::read_to_string(path)?;
+pub fn extract_comments(content: &str, lang: &str) -> Result<Vec<Comment>> {
     let mut comments: Vec<Comment> = Vec::new();
 
     // Query all comments.
