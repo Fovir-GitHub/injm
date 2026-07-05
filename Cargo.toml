@@ -4,6 +4,11 @@ description = "A CLI tool that injects content into marked regions in source fil
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
+keywords = ["cli", "inject", "code", "marker"]
+categories = ["command-line-utilities", "development-tools"]
+repository = "https://github.com/Fovir-GitHub/injm"
+homepage = "https://github.com/Fovir-GitHub/injm"
+readme = "README.md"
 
 [dependencies]
 clap = { version = "4.6.1", features = ["derive"] }
