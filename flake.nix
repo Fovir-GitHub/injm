@@ -1,30 +1,44 @@
 {
-  description = "DevShell for Rust.";
+  description = "A CLI tool that injects content into marked regions in source files.";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
 
   outputs = {
     self,
     nixpkgs,
-  }: let
-    system = "x86_64-linux";
-    pkgs = import nixpkgs {inherit system;};
-  in {
-    devShells.${system}.default = pkgs.mkShell {
-      # Add packages here.
-      buildInputs = with pkgs; [
-        cargo
-        rust-analyzer
-        rustc
-        rustfmt
-      ];
+    flake-utils,
+  }:
+    flake-utils.lib.eachDefaultSystem (
+      system: let
+        pkgs = import nixpkgs {inherit system;};
+        parserVersion = "1.12.4";
+        parserSources = pkgs.fetchurl {
+          url = "https://github.com/xberg-io/tree-sitter-language-pack/releases/download/v${parserVersion}/parser-sources-${parserVersion}.tar.zst";
+          hash = "sha256-NBR3lkTeZMGLmOPNGj5xvmpass+uQFp7hbFgakRePUU=";
+        };
+      in {
+        packages.default = pkgs.rustPlatform.buildRustPackage {
+          pname = "injm";
+          version = "0.1.0";
+          src = ./.;
+          cargoLock.lockFile = ./Cargo.lock;
+          preBuild = ''
+            export TSLP_SOURCE_BUNDLE_URL="file://${parserSources}"
+          '';
+          doCheck = false;
+        };
 
-      # Shell hooks.
-      shellHook = ''
-        echo "Entering the development environment!"
-        rustc --version
-        cargo --version
-      '';
-    };
-  };
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            cargo
+            rust-analyzer
+            rustc
+            rustfmt
+          ];
+        };
+      }
+    );
 }
