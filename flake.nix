@@ -34,6 +34,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             cargo
+            markdown-toc
             rust-analyzer
             rustc
             rustfmt

@@ -2,6 +2,22 @@
 
 A CLI tool that injects content into marked regions in source files.
 
+## Table of Contents
+
+<!-- toc -->
+
+- [Installation](#installation)
+  - [Cargo](#cargo)
+  - [Nix](#nix)
+  - [Download binary](#download-binary)
+- [Usage](#usage)
+- [Supported Languages](#supported-languages)
+- [Roadmap](#roadmap)
+- [License](#license)
+- [Acknowledgement](#acknowledgement)
+
+<!-- tocstop -->
+
 ## Installation
 
 ### Cargo
@@ -16,7 +32,7 @@ cargo install injm
 nix profile install github:Fovir-GitHub/injm
 ```
 
-### Download binary
+### Download Binary
 
 Download the latest binary for your platform from [GitHub Releases](https://github.com/Fovir-GitHub/injm/releases/latest).
 
