@@ -2,6 +2,7 @@ mod cli;
 mod detector;
 mod error;
 mod extractor;
+mod marker;
 
 use crate::error::Result;
 use clap::Parser;
@@ -15,7 +16,9 @@ fn main() -> Result<()> {
     }
 
     let lang = detector::detect(&cli.output)?;
-    println!("language is {}", lang);
+    let content = fs::read_to_string(&cli.output)?;
+    let comments = extractor::extract_comments(&content, lang)?;
+    let blocks = marker::extract_marker_blocks(&comments)?;
 
     Ok(())
 }
