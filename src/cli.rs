@@ -10,4 +10,7 @@ use std::path::PathBuf;
 pub struct Cli {
     #[arg(short, long)]
     pub output: PathBuf,
+
+    #[arg(long)]
+    pub dry_run: bool,
 }

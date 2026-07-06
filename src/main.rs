@@ -22,8 +22,13 @@ fn main() -> Result<()> {
     let comments = extractor::extract_comments(&content, lang)?;
     let blocks = marker::extract_marker_blocks(&comments)?;
     let stdin = io::read_stdin()?;
+
     let replaced = injector::inject(&content, &blocks, &stdin);
-    fs::write(&cli.output, replaced)?;
+    if cli.dry_run {
+        println!("{}", replaced);
+    } else {
+        fs::write(&cli.output, replaced)?;
+    }
 
     Ok(())
 }
