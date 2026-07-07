@@ -11,6 +11,7 @@ A CLI tool that injects content into marked regions in source files.
   - [Nix](#nix)
   - [Download Binary](#download-binary)
 - [Usage](#usage)
+  - [Inject into a Specific Region](#inject-into-a-specific-region)
   - [Dry Run](#dry-run)
 - [Supported Languages](#supported-languages)
 - [Roadmap](#roadmap)
@@ -73,6 +74,36 @@ Running `injm` again will replace the content between the markers:
 ```bash
 cat src.txt | injm --output dest.rs
 ```
+
+### Inject into a Specific Region
+
+Use `:id` to name a region:
+
+`dest.rs`
+
+```rust
+fn main() {
+    // injm begin :greeting
+    // injm end :greeting
+
+    // injm begin :farewell
+    // injm end :farewell
+}
+```
+
+Inject into a specific region with `--id`:
+
+```bash
+echo -n 'println!("Hello!")' | injm --output dest.rs --id greeting
+```
+
+Inject into multiple regions at once:
+
+```bash
+echo -n 'println!("Hello!")' | injm --output dest.rs --id greeting --id farewell
+```
+
+If `--id` is not specified, all regions without an ID will be injected.
 
 ### Dry Run
 
