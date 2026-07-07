@@ -1,6 +1,8 @@
 use clap::Parser;
 use std::path::PathBuf;
 
+use crate::marker::MarkerID;
+
 #[derive(Parser)]
 #[command(
     name = "injm",
@@ -13,4 +15,7 @@ pub struct Cli {
 
     #[arg(long)]
     pub dry_run: bool,
+
+    #[arg(long)]
+    pub id: Vec<MarkerID>,
 }

@@ -1,18 +1,18 @@
-use crate::marker::MarkerBlock;
+use crate::marker::{MarkerBlock, MarkerID};
 
-pub fn inject(content: &str, blocks: &[MarkerBlock], stdin: &str) -> String {
+pub fn inject(
+    content: &str,
+    blocks: &[MarkerBlock],
+    stdin: &str,
+    target_ids: &[MarkerID],
+) -> String {
     let mut lines: Vec<&str> = content.lines().collect();
 
     // Use reversed iteration to avoid changes of line number.
     for block in blocks.iter().rev() {
-        // Content to be replaced is in (begin_line, end_line).
-        let before = lines[..=block.begin_line].to_vec();
-        let after = lines[block.end_line..].to_vec();
-
-        lines = Vec::new();
-        lines.extend_from_slice(&before);
-        lines.push(&stdin);
-        lines.extend_from_slice(&after);
+        if (target_ids.is_empty() && block.id.is_none()) || target_ids.contains(&block.id) {
+            lines = inject_into_a_block(lines, block, stdin);
+        }
     }
 
     let mut result = lines.join("\n");
@@ -21,6 +21,23 @@ pub fn inject(content: &str, blocks: &[MarkerBlock], stdin: &str) -> String {
     }
 
     result
+}
+
+fn inject_into_a_block<'a>(
+    lines: Vec<&'a str>,
+    block: &MarkerBlock,
+    stdin: &'a str,
+) -> Vec<&'a str> {
+    // Content to be replaced is in (begin_line, end_line).
+    let before = lines[..=block.begin_line].to_vec();
+    let after = lines[block.end_line..].to_vec();
+
+    let mut injected = Vec::new();
+    injected.extend_from_slice(&before);
+    injected.push(stdin);
+    injected.extend_from_slice(&after);
+
+    injected
 }
 
 #[cfg(test)]
@@ -36,7 +53,7 @@ mod tests {
             begin_line: 1,
             end_line: 3,
         }];
-        let result = inject(content, &blocks, "    new content");
+        let result = inject(content, &blocks, "    new content", &[None]);
         assert!(result.contains("new content"));
         assert!(!result.contains("old content"));
     }
@@ -49,7 +66,7 @@ mod tests {
             begin_line: 0,
             end_line: 2,
         }];
-        let result = inject(content, &blocks, "new");
+        let result = inject(content, &blocks, "new", &[None]);
         assert!(result.contains("// injm begin"));
         assert!(result.contains("// injm end"));
     }
@@ -62,7 +79,7 @@ mod tests {
             begin_line: 0,
             end_line: 2,
         }];
-        let result = inject(content, &blocks, "new");
+        let result = inject(content, &blocks, "new", &[None]);
         assert!(result.ends_with('\n'));
     }
 
@@ -74,7 +91,7 @@ mod tests {
             begin_line: 0,
             end_line: 2,
         }];
-        let result = inject(content, &blocks, "new");
+        let result = inject(content, &blocks, "new", &[None]);
         assert!(!result.ends_with('\n'));
     }
 
@@ -94,7 +111,7 @@ mod tests {
                 end_line: 6,
             },
         ];
-        let result = inject(content, &blocks, "new");
+        let result = inject(content, &blocks, "new", &[None]);
         assert!(!result.contains("old one"));
         assert!(!result.contains("old two"));
         assert_eq!(result.matches("new").count(), 2);
@@ -108,7 +125,7 @@ mod tests {
             begin_line: 0,
             end_line: 1,
         }];
-        let result = inject(content, &blocks, "new content");
+        let result = inject(content, &blocks, "new content", &[None]);
         assert!(result.contains("new content"));
     }
 
@@ -120,7 +137,117 @@ mod tests {
             begin_line: 0,
             end_line: 2,
         }];
-        let result = inject(content, &blocks, "line one\nline two\nline three");
+        let result = inject(content, &blocks, "line one\nline two\nline three", &[None]);
         assert!(result.contains("line one\nline two\nline three"));
+    }
+
+    #[test]
+    fn test_inject_with_id() {
+        let content = "\
+// injm begin :first
+old first
+// injm end :first
+// injm begin :second
+old second
+// injm end :second
+";
+        let blocks = vec![
+            MarkerBlock {
+                id: Some("first".to_string()),
+                begin_line: 0,
+                end_line: 2,
+            },
+            MarkerBlock {
+                id: Some("second".to_string()),
+                begin_line: 3,
+                end_line: 5,
+            },
+        ];
+        let result = inject(
+            content,
+            &blocks,
+            "new content",
+            &[Some("first".to_string())],
+        );
+        assert!(result.contains("new content"));
+        assert!(!result.contains("old first"));
+        assert!(result.contains("old second"));
+    }
+
+    #[test]
+    fn test_inject_when_no_ids() {
+        let content = "\
+// injm begin :first
+old first
+// injm end :first
+// injm begin :second
+old second
+// injm end :second
+// injm begin
+// injm end
+";
+        let blocks = vec![
+            MarkerBlock {
+                id: Some("first".to_string()),
+                begin_line: 0,
+                end_line: 2,
+            },
+            MarkerBlock {
+                id: Some("second".to_string()),
+                begin_line: 3,
+                end_line: 5,
+            },
+            MarkerBlock {
+                id: None,
+                begin_line: 6,
+                end_line: 8,
+            },
+        ];
+        let result = inject(content, &blocks, "new content", &[]);
+        assert!(result.contains("old first"));
+        assert!(result.contains("old second"));
+        assert_eq!(result.matches("new content").count(), 1);
+    }
+
+    #[test]
+    fn test_inject_multiple_ids() {
+        let content = "\
+// injm begin :first
+old first
+// injm end :first
+// injm begin :second
+old second
+// injm end :second
+// injm begin :third
+old third
+// injm end :third
+";
+        let blocks = vec![
+            MarkerBlock {
+                id: Some("first".to_string()),
+                begin_line: 0,
+                end_line: 2,
+            },
+            MarkerBlock {
+                id: Some("second".to_string()),
+                begin_line: 3,
+                end_line: 5,
+            },
+            MarkerBlock {
+                id: Some("third".to_string()),
+                begin_line: 6,
+                end_line: 8,
+            },
+        ];
+        let result = inject(
+            content,
+            &blocks,
+            "new content",
+            &[Some("first".to_string()), Some("third".to_string())],
+        );
+        assert!(!result.contains("old first"));
+        assert!(result.contains("old second"));
+        assert!(!result.contains("old third"));
+        assert_eq!(result.matches("new content").count(), 2);
     }
 }
