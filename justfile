@@ -28,3 +28,8 @@ release version:
     git push origin main
     git tag -a v{{version}} -e 
     git push origin v{{version}}
+
+toc:
+  # Generate ToC in README.md
+  markdown-toc -i README.md
+  prettier --write README.md
