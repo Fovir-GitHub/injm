@@ -6,20 +6,23 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    flake-utils,
-  }:
+  outputs =
+    {
+      nixpkgs,
+      flake-utils,
+      ...
+    }:
     flake-utils.lib.eachDefaultSystem (
-      system: let
-        pkgs = import nixpkgs {inherit system;};
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
         parserVersion = "1.12.4";
         parserSources = pkgs.fetchurl {
           url = "https://github.com/xberg-io/tree-sitter-language-pack/releases/download/v${parserVersion}/parser-sources-${parserVersion}.tar.zst";
           hash = "sha256-NBR3lkTeZMGLmOPNGj5xvmpass+uQFp7hbFgakRePUU=";
         };
-      in {
+      in
+      {
         packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = "injm";
           version = "0.1.1";
