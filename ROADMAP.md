@@ -21,8 +21,8 @@ cat src.txt | injm -o dest.rs
 ## v0.2.0
 
 - [x] Support `--dry-run` to preview changes without writing
-- [ ] Skip binary files
-- [ ] Error messages when markers are missing or mismatched
+- [x] Skip binary files
+- [x] Error messages when markers are missing or mismatched
 
 ## v0.3.0
 
