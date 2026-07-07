@@ -9,8 +9,9 @@ A CLI tool that injects content into marked regions in source files.
 - [Installation](#installation)
   - [Cargo](#cargo)
   - [Nix](#nix)
-  - [Download binary](#download-binary)
+  - [Download Binary](#download-binary)
 - [Usage](#usage)
+  - [Dry Run](#dry-run)
 - [Supported Languages](#supported-languages)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -71,6 +72,14 @@ Running `injm` again will replace the content between the markers:
 
 ```bash
 cat src.txt | injm --output dest.rs
+```
+
+### Dry Run
+
+Preview the result without writing to the file:
+
+```bash
+cat src.txt | injm --output dest.rs --dry-run
 ```
 
 ## Supported Languages
