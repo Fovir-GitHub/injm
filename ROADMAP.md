@@ -26,8 +26,8 @@ cat src.txt | injm -o dest.rs
 
 ## v0.3.0
 
-- [ ] Support multiple marker pairs inside a file with an `ID` identifier
-- [ ] Allow the user to specify which block to insert
+- [x] Support multiple marker pairs inside a file with an `ID` identifier
+- [x] Allow the user to specify which block to insert
 
 The usage looks like:
 
