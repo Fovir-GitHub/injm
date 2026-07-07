@@ -1,7 +1,10 @@
 use crate::error::Result;
 use crate::extractor::Comment;
 
+pub type MarkerID = Option<String>;
+
 pub struct MarkerBlock {
+    pub id: MarkerID,
     pub begin_line: usize,
     pub end_line: usize,
 }
@@ -9,6 +12,7 @@ pub struct MarkerBlock {
 pub fn extract_marker_blocks(comments: &[Comment]) -> Result<Vec<MarkerBlock>> {
     let mut marker_blocks: Vec<MarkerBlock> = Vec::new();
     let mut begin: Option<usize> = None; // Record the line of `injm begin`.
+    let mut id: MarkerID = None;
 
     for comment in comments {
         // If comment contains `injm begin`, then check nested blocks,
@@ -26,9 +30,11 @@ pub fn extract_marker_blocks(comments: &[Comment]) -> Result<Vec<MarkerBlock>> {
                 .into());
             }
             begin = Some(comment.end_line);
+            id = extract_id(&comment.text)?;
         } else if comment.text.contains("injm end") {
             match begin.take() {
                 Some(b) => marker_blocks.push(MarkerBlock {
+                    id: id.take(),
                     begin_line: b,
                     end_line: comment.start_line,
                 }),
@@ -47,6 +53,19 @@ pub fn extract_marker_blocks(comments: &[Comment]) -> Result<Vec<MarkerBlock>> {
     match begin {
         Some(b) => Err(format!("found `injm begin` without `injm end` at line {}", b).into()),
         None => Ok(marker_blocks),
+    }
+}
+
+fn extract_id(comment: &str) -> Result<MarkerID> {
+    let tokens: Vec<&str> = comment
+        .split_whitespace()
+        .filter(|t| t.starts_with(":"))
+        .collect();
+
+    match tokens.len() {
+        1 => Ok(Some(tokens[0][1..].to_string())),
+        2.. => Err("multiple tokens detected".into()),
+        _ => Ok(None),
     }
 }
 

@@ -32,6 +32,7 @@ mod tests {
     fn test_inject_single_block() {
         let content = "fn main() {\n    // injm begin\n    old content\n    // injm end\n}\n";
         let blocks = vec![MarkerBlock {
+            id: None,
             begin_line: 1,
             end_line: 3,
         }];
@@ -44,6 +45,7 @@ mod tests {
     fn test_inject_preserves_markers() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
+            id: None,
             begin_line: 0,
             end_line: 2,
         }];
@@ -56,6 +58,7 @@ mod tests {
     fn test_inject_preserves_trailing_newline() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
+            id: None,
             begin_line: 0,
             end_line: 2,
         }];
@@ -67,6 +70,7 @@ mod tests {
     fn test_inject_no_trailing_newline() {
         let content = "// injm begin\nold\n// injm end";
         let blocks = vec![MarkerBlock {
+            id: None,
             begin_line: 0,
             end_line: 2,
         }];
@@ -80,10 +84,12 @@ mod tests {
             "// injm begin\nold one\n// injm end\ncode\n// injm begin\nold two\n// injm end\n";
         let blocks = vec![
             MarkerBlock {
+                id: None,
                 begin_line: 0,
                 end_line: 2,
             },
             MarkerBlock {
+                id: None,
                 begin_line: 4,
                 end_line: 6,
             },
@@ -98,6 +104,7 @@ mod tests {
     fn test_inject_empty_block() {
         let content = "// injm begin\n// injm end\n";
         let blocks = vec![MarkerBlock {
+            id: None,
             begin_line: 0,
             end_line: 1,
         }];
@@ -109,6 +116,7 @@ mod tests {
     fn test_inject_multiline_stdin() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
+            id: None,
             begin_line: 0,
             end_line: 2,
         }];
