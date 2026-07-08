@@ -51,18 +51,21 @@ cat src.txt | injm -o dest.rs --id first
 
 ## v0.4.0
 
-- [ ] Support "map" operation between two files by ID
-- [ ] Provide `-i` and `--input` to specify the input file
+Synchronize between files.
 
-Usage:
+- [ ] Read source content from `--input` or `-i`
+- [ ] Use `<id` and `>id` to specify input or output
+- [ ] Report missing `<id` IDs
+
+Example:
 
 `src.rs`
 
 ```rust
 fn main() {
-    // injm begin :hello
-    println!("Hello injm")
-    // injm end :hello
+    // injm begin <hello
+    println!("Hello, world!")
+    // injm end
 }
 ```
 
@@ -70,25 +73,78 @@ fn main() {
 
 ```rust
 fn main() {
-    println!("Greeting from injm")
-    // injm begin :hello
-    // injm end :hello
+    // injm begin >hello
+    // injm end
 }
 ```
 
-Then, run
+Then,
 
 ```bash
 injm -i src.rs -o dest.rs
 ```
 
-And `dest.rs` becomes
+And `dest.rs` becomes:
 
 ```rust
 fn main() {
-    println!("Greeting from injm")
-    // injm begin :hello
-    println!("Hello injm")
-    // injm end :hello
+    // injm begin >hello
+    println!("Hello, world!")
+    // injm end
 }
+```
+
+## v0.5.0
+
+Synchronize directories.
+
+- [ ] Scan supported source files recursively
+- [ ] Accept directories as input and output
+- [ ] Create `list` subcommand to list all marker regions
+
+## v0.6.0
+
+Improve preview and verification.
+
+- [ ] Add check mode
+- [ ] Improve error messages (Show line numbers of mismatched markers)
+- [ ] Return non-zero exit code when synchronization is needed
+- [ ] Show unified diff output
+
+Example:
+
+```bash
+injm check -i src -o docs
+```
+
+Perfect for CI.
+
+## v0.7.0
+
+Improve project configuration.
+
+- [ ] Support `injm.toml`
+- [ ] Configure include/exclude patterns
+- [ ] Configure marker or marker prefix
+- [ ] Configure default source/output mappings
+
+Example:
+
+```toml
+[input]
+path = "examples"
+
+[output]
+path = "docs"
+
+exclude = [
+    "target/**",
+    "vendor/**"
+]
+```
+
+Then simply run:
+
+```bash
+injm
 ```
