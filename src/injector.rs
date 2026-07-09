@@ -10,9 +10,13 @@ pub fn inject(
 
     // Use reversed iteration to avoid changes of line number.
     for block in blocks.iter().rev() {
-        if (target_ids.is_empty() && block.output_id.is_none())
-            || target_ids.contains(&block.output_id)
-        {
+        let should_inject = if target_ids.is_empty() {
+            block.output_id.is_none()
+        } else {
+            target_ids.contains(&block.output_id)
+        };
+
+        if should_inject {
             lines = inject_into_a_block(lines, block, stdin);
         }
     }
