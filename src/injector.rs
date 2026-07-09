@@ -59,6 +59,7 @@ mod tests {
             output_id: None,
             begin_line: 1,
             end_line: 3,
+            input_content: None,
         }];
         let result = inject(content, &blocks, "    new content", &[None]);
         assert!(result.contains("new content"));
@@ -73,6 +74,7 @@ mod tests {
             output_id: None,
             begin_line: 0,
             end_line: 2,
+            input_content: None,
         }];
         let result = inject(content, &blocks, "new", &[None]);
         assert!(result.contains("// injm begin"));
@@ -87,6 +89,7 @@ mod tests {
             output_id: None,
             begin_line: 0,
             end_line: 2,
+            input_content: None,
         }];
         let result = inject(content, &blocks, "new", &[None]);
         assert!(result.ends_with('\n'));
@@ -100,6 +103,7 @@ mod tests {
             output_id: None,
             begin_line: 0,
             end_line: 2,
+            input_content: None,
         }];
         let result = inject(content, &blocks, "new", &[None]);
         assert!(!result.ends_with('\n'));
@@ -115,12 +119,14 @@ mod tests {
                 output_id: None,
                 begin_line: 0,
                 end_line: 2,
+                input_content: None,
             },
             MarkerBlock {
                 input_ids: None,
                 output_id: None,
                 begin_line: 4,
                 end_line: 6,
+                input_content: None,
             },
         ];
         let result = inject(content, &blocks, "new", &[None]);
@@ -137,6 +143,7 @@ mod tests {
             output_id: None,
             begin_line: 0,
             end_line: 1,
+            input_content: None,
         }];
         let result = inject(content, &blocks, "new content", &[None]);
         assert!(result.contains("new content"));
@@ -150,6 +157,7 @@ mod tests {
             output_id: None,
             begin_line: 0,
             end_line: 2,
+            input_content: None,
         }];
         let result = inject(content, &blocks, "line one\nline two\nline three", &[None]);
         assert!(result.contains("line one\nline two\nline three"));
@@ -171,12 +179,14 @@ old second
                 output_id: Some("first".to_string()),
                 begin_line: 0,
                 end_line: 2,
+                input_content: None,
             },
             MarkerBlock {
                 input_ids: None,
                 output_id: Some("second".to_string()),
                 begin_line: 3,
                 end_line: 5,
+                input_content: None,
             },
         ];
         let result = inject(
@@ -208,18 +218,21 @@ old second
                 output_id: Some("first".to_string()),
                 begin_line: 0,
                 end_line: 2,
+                input_content: None,
             },
             MarkerBlock {
                 input_ids: None,
                 output_id: Some("second".to_string()),
                 begin_line: 3,
                 end_line: 5,
+                input_content: None,
             },
             MarkerBlock {
                 input_ids: None,
                 output_id: None,
                 begin_line: 6,
                 end_line: 8,
+                input_content: None,
             },
         ];
         let result = inject(content, &blocks, "new content", &[]);
@@ -247,18 +260,21 @@ old third
                 output_id: Some("first".to_string()),
                 begin_line: 0,
                 end_line: 2,
+                input_content: None,
             },
             MarkerBlock {
                 input_ids: None,
                 output_id: Some("second".to_string()),
                 begin_line: 3,
                 end_line: 5,
+                input_content: None,
             },
             MarkerBlock {
                 input_ids: None,
                 output_id: Some("third".to_string()),
                 begin_line: 6,
                 end_line: 8,
+                input_content: None,
             },
         ];
         let result = inject(

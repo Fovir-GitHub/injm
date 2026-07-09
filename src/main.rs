@@ -21,7 +21,7 @@ fn main() -> Result<()> {
     let lang = detector::detect(&output_file)?;
     let content = fs::read_to_string(&output_file)?;
     let comments = extractor::extract_comments(&content, lang)?;
-    let blocks = marker::extract_marker_blocks(&comments)?;
+    let blocks = marker::extract_marker_blocks(&comments, &content)?;
     let stdin = io::read_stdin()?;
 
     let replaced = injector::inject(&content, &blocks, &stdin, &ids);
