@@ -1,16 +1,18 @@
-use crate::marker::{MarkerBlock, MarkerID};
+use crate::marker::{MarkerBlock, OutputID};
 
 pub fn inject(
     content: &str,
     blocks: &[MarkerBlock],
     stdin: &str,
-    target_ids: &[MarkerID],
+    target_ids: &[OutputID],
 ) -> String {
     let mut lines: Vec<&str> = content.lines().collect();
 
     // Use reversed iteration to avoid changes of line number.
     for block in blocks.iter().rev() {
-        if (target_ids.is_empty() && block.id.is_none()) || target_ids.contains(&block.id) {
+        if (target_ids.is_empty() && block.output_id.is_none())
+            || target_ids.contains(&block.output_id)
+        {
             lines = inject_into_a_block(lines, block, stdin);
         }
     }
@@ -49,7 +51,8 @@ mod tests {
     fn test_inject_single_block() {
         let content = "fn main() {\n    // injm begin\n    old content\n    // injm end\n}\n";
         let blocks = vec![MarkerBlock {
-            id: None,
+            input_ids: None,
+            output_id: None,
             begin_line: 1,
             end_line: 3,
         }];
@@ -62,7 +65,8 @@ mod tests {
     fn test_inject_preserves_markers() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            id: None,
+            input_ids: None,
+            output_id: None,
             begin_line: 0,
             end_line: 2,
         }];
@@ -75,7 +79,8 @@ mod tests {
     fn test_inject_preserves_trailing_newline() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            id: None,
+            input_ids: None,
+            output_id: None,
             begin_line: 0,
             end_line: 2,
         }];
@@ -87,7 +92,8 @@ mod tests {
     fn test_inject_no_trailing_newline() {
         let content = "// injm begin\nold\n// injm end";
         let blocks = vec![MarkerBlock {
-            id: None,
+            input_ids: None,
+            output_id: None,
             begin_line: 0,
             end_line: 2,
         }];
@@ -101,12 +107,14 @@ mod tests {
             "// injm begin\nold one\n// injm end\ncode\n// injm begin\nold two\n// injm end\n";
         let blocks = vec![
             MarkerBlock {
-                id: None,
+                input_ids: None,
+                output_id: None,
                 begin_line: 0,
                 end_line: 2,
             },
             MarkerBlock {
-                id: None,
+                input_ids: None,
+                output_id: None,
                 begin_line: 4,
                 end_line: 6,
             },
@@ -121,7 +129,8 @@ mod tests {
     fn test_inject_empty_block() {
         let content = "// injm begin\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            id: None,
+            input_ids: None,
+            output_id: None,
             begin_line: 0,
             end_line: 1,
         }];
@@ -133,7 +142,8 @@ mod tests {
     fn test_inject_multiline_stdin() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            id: None,
+            input_ids: None,
+            output_id: None,
             begin_line: 0,
             end_line: 2,
         }];
@@ -153,12 +163,14 @@ old second
 ";
         let blocks = vec![
             MarkerBlock {
-                id: Some("first".to_string()),
+                input_ids: None,
+                output_id: Some("first".to_string()),
                 begin_line: 0,
                 end_line: 2,
             },
             MarkerBlock {
-                id: Some("second".to_string()),
+                input_ids: None,
+                output_id: Some("second".to_string()),
                 begin_line: 3,
                 end_line: 5,
             },
@@ -188,17 +200,20 @@ old second
 ";
         let blocks = vec![
             MarkerBlock {
-                id: Some("first".to_string()),
+                input_ids: None,
+                output_id: Some("first".to_string()),
                 begin_line: 0,
                 end_line: 2,
             },
             MarkerBlock {
-                id: Some("second".to_string()),
+                input_ids: None,
+                output_id: Some("second".to_string()),
                 begin_line: 3,
                 end_line: 5,
             },
             MarkerBlock {
-                id: None,
+                input_ids: None,
+                output_id: None,
                 begin_line: 6,
                 end_line: 8,
             },
@@ -224,17 +239,20 @@ old third
 ";
         let blocks = vec![
             MarkerBlock {
-                id: Some("first".to_string()),
+                input_ids: None,
+                output_id: Some("first".to_string()),
                 begin_line: 0,
                 end_line: 2,
             },
             MarkerBlock {
-                id: Some("second".to_string()),
+                input_ids: None,
+                output_id: Some("second".to_string()),
                 begin_line: 3,
                 end_line: 5,
             },
             MarkerBlock {
-                id: Some("third".to_string()),
+                input_ids: None,
+                output_id: Some("third".to_string()),
                 begin_line: 6,
                 end_line: 8,
             },
