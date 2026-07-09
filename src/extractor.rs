@@ -1,6 +1,6 @@
 use tree_sitter_language_pack::{ProcessConfig, process};
 
-use crate::error::Result;
+use crate::types::Result;
 
 pub struct Comment {
     pub text: String,

@@ -1,4 +1,4 @@
-use crate::marker::{MarkerBlock, OutputID};
+use crate::{marker::MarkerBlock, types::OutputID};
 
 pub fn inject(
     content: &str,

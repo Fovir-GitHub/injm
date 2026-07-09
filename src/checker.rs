@@ -1,4 +1,4 @@
-use crate::error::Result;
+use crate::types::Result;
 use std::{fs, path::Path};
 
 pub fn check_file(path: &Path) -> Result<()> {

@@ -1,9 +1,7 @@
 use std::mem;
 
-use crate::error::Result;
 use crate::extractor::Comment;
-
-pub type OutputID = Option<String>;
+use crate::types::{OutputID, Result};
 
 pub struct MarkerBlock {
     pub begin_line: usize,
@@ -19,7 +17,7 @@ pub fn extract_marker_blocks(comments: &[Comment]) -> Result<Vec<MarkerBlock>> {
     let mut marker_blocks: Vec<MarkerBlock> = Vec::new();
     let mut begin: Option<usize> = None; // Record the line of `injm begin`.
     let mut input_ids: Option<Vec<String>> = None;
-    let mut output_id: Option<String> = None;
+    let mut output_id: OutputID = None;
 
     for comment in comments {
         // If comment contains `injm begin`, then check nested blocks,
@@ -64,7 +62,7 @@ pub fn extract_marker_blocks(comments: &[Comment]) -> Result<Vec<MarkerBlock>> {
     }
 }
 
-fn extract_id(comment: &str) -> Result<(Option<Vec<String>>, Option<String>)> {
+fn extract_id(comment: &str) -> Result<(Option<Vec<String>>, OutputID)> {
     let input_tokens: Vec<&str> = comment
         .split_whitespace()
         .filter(|t| t.starts_with("<"))

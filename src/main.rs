@@ -1,13 +1,13 @@
 mod checker;
 mod cli;
 mod detector;
-mod error;
 mod extractor;
 mod injector;
 mod io;
 mod marker;
+mod types;
 
-use crate::error::Result;
+use crate::types::Result;
 use clap::Parser;
 use std::fs;
 

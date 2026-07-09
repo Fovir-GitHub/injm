@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-use crate::marker::OutputID;
+use crate::types::OutputID;
 
 #[derive(Parser)]
 #[command(
