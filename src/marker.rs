@@ -9,7 +9,7 @@ pub struct MarkerBlock {
 
     // Allow multiple input markers,
     // while a block can have at most one output marker.
-    pub input_ids: Option<Vec<String>>,
+    pub input_ids: Vec<String>,
     pub input_content: Option<String>,
     pub output_id: OutputID,
 }
@@ -17,7 +17,7 @@ pub struct MarkerBlock {
 pub fn extract_marker_blocks(comments: &[Comment], content: &str) -> Result<Vec<MarkerBlock>> {
     let mut marker_blocks: Vec<MarkerBlock> = Vec::new();
     let mut begin: Option<usize> = None; // Record the line of `injm begin`.
-    let mut input_ids: Option<Vec<String>> = None;
+    let mut input_ids: Vec<String> = Vec::new();
     let mut output_id: OutputID = None;
 
     for comment in comments {
@@ -43,7 +43,7 @@ pub fn extract_marker_blocks(comments: &[Comment], content: &str) -> Result<Vec<
                     let end_line = comment.start_line;
 
                     // Extract input contents.
-                    let input_content = if input_ids.is_some() {
+                    let input_content = if !input_ids.is_empty() {
                         let lines: Vec<&str> = content.lines().collect();
                         Some(lines[begin_line + 1..end_line].join("\n"))
                     } else {
@@ -76,7 +76,7 @@ pub fn extract_marker_blocks(comments: &[Comment], content: &str) -> Result<Vec<
     }
 }
 
-fn extract_id(comment: &str) -> Result<(Option<Vec<String>>, OutputID)> {
+fn extract_id(comment: &str) -> Result<(Vec<String>, OutputID)> {
     let input_tokens: Vec<&str> = comment
         .split_whitespace()
         .filter(|t| t.starts_with("<"))
@@ -86,11 +86,7 @@ fn extract_id(comment: &str) -> Result<(Option<Vec<String>>, OutputID)> {
         .filter(|t| t.starts_with(">"))
         .collect();
 
-    let input_ids = if input_tokens.is_empty() {
-        None
-    } else {
-        Some(input_tokens.iter().map(|t| t[1..].to_string()).collect())
-    };
+    let input_ids = input_tokens.iter().map(|t| t[1..].to_string()).collect();
 
     let output_id = match output_tokens.len() {
         0 => None,
@@ -184,28 +180,28 @@ mod tests {
     #[test]
     fn test_extract_id_no_markers() {
         let (input, output) = extract_id("// injm begin").unwrap();
-        assert_eq!(input, None);
+        assert_eq!(input.is_empty(), true);
         assert_eq!(output, None);
     }
 
     #[test]
     fn test_extract_id_with_output() {
         let (input, output) = extract_id("// injm begin >first").unwrap();
-        assert_eq!(input, None);
+        assert_eq!(input.is_empty(), true);
         assert_eq!(output, Some("first".to_string()));
     }
 
     #[test]
     fn test_extract_id_with_input() {
         let (input, output) = extract_id("// injm begin <first <second").unwrap();
-        assert_eq!(input, Some(vec!["first".to_string(), "second".to_string()]));
+        assert_eq!(input, vec!["first".to_string(), "second".to_string()]);
         assert_eq!(output, None);
     }
 
     #[test]
     fn test_extract_id_with_both() {
         let (input, output) = extract_id("// injm begin <first >second").unwrap();
-        assert_eq!(input, Some(vec!["first".to_string()]));
+        assert_eq!(input, vec!["first".to_string()]);
         assert_eq!(output, Some("second".to_string()));
     }
 
@@ -223,7 +219,7 @@ mod tests {
         ];
         let blocks = extract_marker_blocks(&comments, "").unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(blocks[0].input_ids, None);
+        assert_eq!(blocks[0].input_ids.is_empty(), true);
         assert_eq!(blocks[0].output_id, None);
     }
 
@@ -264,7 +260,7 @@ println!(\"Hello injm\")
         ];
         let blocks = extract_marker_blocks(&comments, content).unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(blocks[0].input_ids, Some(vec!["hello".to_string()]));
+        assert_eq!(blocks[0].input_ids, vec!["hello".to_string()]);
         assert_eq!(
             blocks[0].input_content,
             Some("println!(\"Hello injm\")".to_string())
@@ -285,7 +281,7 @@ println!(\"Hello injm\")
         ];
         let blocks = extract_marker_blocks(&comments, content).unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(blocks[0].input_ids, Some(vec!["hello".to_string()]));
+        assert_eq!(blocks[0].input_ids, vec!["hello".to_string()]);
         assert_eq!(
             blocks[0].input_content,
             Some(
@@ -307,7 +303,7 @@ println!(\"Hello\")
         ];
         let blocks = extract_marker_blocks(&comments, content).unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(blocks[0].input_ids, None);
+        assert_eq!(blocks[0].input_ids.is_empty(), true);
         assert_eq!(blocks[0].input_content, None);
     }
 
@@ -325,7 +321,7 @@ old content
         assert_eq!(blocks.len(), 1);
         assert_eq!(
             blocks[0].input_ids,
-            Some(vec!["first".to_string(), "second".to_string()])
+            vec!["first".to_string(), "second".to_string()]
         );
         assert_eq!(blocks[0].input_content, Some("old content".to_string()));
     }
