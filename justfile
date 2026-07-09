@@ -24,7 +24,7 @@ release version:
     sed -i 's/version = ".*";/version = "{{version}}";/' flake.nix
     cargo update --package injm
     git add Cargo.toml Cargo.lock flake.nix
-    git commit -m "chore: release v{{version}}" || true
+    git commit -s -m "chore: release v{{version}}" || true
     git push origin main
     git tag -a v{{version}} -e 
     git push origin v{{version}}
