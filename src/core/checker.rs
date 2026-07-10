@@ -1,7 +1,7 @@
-use crate::error::Result;
+use crate::core::types::Result;
 use std::{fs, path::Path};
 
-pub fn check_file(path: &Path) -> Result<()> {
+pub(crate) fn check_file(path: &Path) -> Result<()> {
     if !fs::exists(path)? {
         return Err("file does not exist".into());
     }

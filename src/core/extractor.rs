@@ -1,14 +1,7 @@
+use crate::core::types::{Comment, Result};
 use tree_sitter_language_pack::{ProcessConfig, process};
 
-use crate::error::Result;
-
-pub struct Comment {
-    pub text: String,
-    pub start_line: usize,
-    pub end_line: usize,
-}
-
-pub fn extract_comments(content: &str, lang: &str) -> Result<Vec<Comment>> {
+pub(crate) fn extract_comments(content: &str, lang: &str) -> Result<Vec<Comment>> {
     let mut comments: Vec<Comment> = Vec::new();
 
     // Query all comments.

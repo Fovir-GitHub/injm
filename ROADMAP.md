@@ -53,9 +53,9 @@ cat src.txt | injm -o dest.rs --id first
 
 Synchronize between files.
 
-- [ ] Read source content from `--input` or `-i`
-- [ ] Use `<id` and `>id` to specify input or output
-- [ ] Report missing `<id` IDs
+- [x] Read source content from `--input` or `-i`
+- [x] Use `<id` and `>id` to specify input or output
+- [x] Report missing `<id` IDs
 
 Example:
 

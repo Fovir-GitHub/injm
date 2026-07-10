@@ -12,6 +12,7 @@ A CLI tool that injects content into marked regions in source files.
   - [Download Binary](#download-binary)
 - [Usage](#usage)
   - [Inject into a Specific Region](#inject-into-a-specific-region)
+  - [Sync Between Files](#sync-between-files)
   - [Dry Run](#dry-run)
 - [Supported Languages](#supported-languages)
 - [Roadmap](#roadmap)
@@ -77,21 +78,21 @@ cat src.txt | injm --output dest.rs
 
 ### Inject into a Specific Region
 
-Use `:id` to name a region:
+Give a region an output ID with `>id`, then target it with `--id`:
 
 `dest.rs`
 
 ```rust
 fn main() {
-    // injm begin :greeting
-    // injm end :greeting
+    // injm begin >greeting
+    // injm end
 
-    // injm begin :farewell
-    // injm end :farewell
+    // injm begin >farewell
+    // injm end
 }
 ```
 
-Inject into a specific region with `--id`:
+Inject into a specific region:
 
 ```bash
 echo -n 'println!("Hello!")' | injm --output dest.rs --id greeting
@@ -103,7 +104,52 @@ Inject into multiple regions at once:
 echo -n 'println!("Hello!")' | injm --output dest.rs --id greeting --id farewell
 ```
 
-If `--id` is not specified, all regions without an ID will be injected.
+If `--id` is not specified, only regions **without** an ID are injected; regions with a `>id` are left untouched.
+
+### Sync Between Files
+
+Instead of piping from stdin, copy content between files with `--input`.
+Mark the source region with `<id` (the content to read) and the destination
+region with `>id` (where it goes):
+
+`src.rs`
+
+```rust
+fn main() {
+    // injm begin <hello
+    println!("Hello, world!");
+    // injm end
+}
+```
+
+`dest.rs`
+
+```rust
+fn main() {
+    // injm begin >hello
+    // injm end
+}
+```
+
+Then sync:
+
+```bash
+injm --input src.rs --output dest.rs
+```
+
+`dest.rs` becomes:
+
+```rust
+fn main() {
+    // injm begin >hello
+    println!("Hello, world!");
+    // injm end
+}
+```
+
+A region may read from several sources by listing multiple `<id` markers.
+If a `>id` in the output has no matching `<id` in the input, `injm` reports
+the missing ID and exits with an error.
 
 ### Dry Run
 
