@@ -12,7 +12,10 @@ impl MarkerBlock {
     }
 }
 
-pub fn extract_marker_blocks(comments: &[Comment], content: &str) -> Result<Vec<MarkerBlock>> {
+pub(crate) fn extract_marker_blocks(
+    comments: &[Comment],
+    content: &str,
+) -> Result<Vec<MarkerBlock>> {
     let mut marker_blocks: Vec<MarkerBlock> = Vec::new();
     let mut begin: Option<usize> = None; // Record the line of `injm begin`.
     let mut input_ids: Vec<String> = Vec::new();

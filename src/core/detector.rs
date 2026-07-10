@@ -1,7 +1,7 @@
 use crate::core::types::Result;
 use std::{fs, path::Path};
 
-pub fn detect(path: &Path) -> Result<&'static str> {
+pub(crate) fn detect(path: &Path) -> Result<&'static str> {
     // Detect language from file path or extension.
     if let Some(lang) =
         tree_sitter_language_pack::detect_language(path.to_str().ok_or("invalid path")?)

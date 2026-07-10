@@ -1,7 +1,7 @@
-pub mod checker;
-pub mod detector;
-pub mod extractor;
+mod checker;
+mod detector;
+mod extractor;
 pub mod inject;
-pub mod marker;
+mod marker;
 pub mod parse;
 pub mod types;

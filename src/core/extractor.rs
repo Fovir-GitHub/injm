@@ -1,7 +1,7 @@
 use crate::core::types::{Comment, Result};
 use tree_sitter_language_pack::{ProcessConfig, process};
 
-pub fn extract_comments(content: &str, lang: &str) -> Result<Vec<Comment>> {
+pub(crate) fn extract_comments(content: &str, lang: &str) -> Result<Vec<Comment>> {
     let mut comments: Vec<Comment> = Vec::new();
 
     // Query all comments.
