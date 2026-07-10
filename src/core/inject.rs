@@ -184,12 +184,12 @@ mod tests {
     #[test]
     fn test_inject_with_id() {
         let content = "\
-// injm begin :first
+// injm begin <first
 old first
-// injm end :first
-// injm begin :second
+// injm end 
+// injm begin <second
 old second
-// injm end :second
+// injm end 
 ";
         let blocks = vec![
             MarkerBlock {
@@ -225,12 +225,12 @@ old second
     #[test]
     fn test_inject_when_no_ids() {
         let content = "\
-// injm begin :first
+// injm begin <first
 old first
-// injm end :first
-// injm begin :second
+// injm end 
+// injm begin <second
 old second
-// injm end :second
+// injm end 
 // injm begin
 // injm end
 ";
@@ -266,15 +266,15 @@ old second
     #[test]
     fn test_inject_multiple_ids() {
         let content = "\
-// injm begin :first
+// injm begin <first
 old first
-// injm end :first
-// injm begin :second
+// injm end 
+// injm begin <second
 old second
-// injm end :second
-// injm begin :third
+// injm end 
+// injm begin <third
 old third
-// injm end :third
+// injm end 
 ";
         let blocks = vec![
             MarkerBlock {
