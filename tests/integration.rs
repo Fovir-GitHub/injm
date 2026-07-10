@@ -202,3 +202,127 @@ fn test_inject_all_when_no_id_specified() {
     assert!(!result.contains("old default"));
     assert!(result.contains("old first"));
 }
+
+#[test]
+fn test_map_between_files() {
+    let mut src = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(src, "fn main() {{").unwrap();
+    writeln!(src, "    // injm begin <hello").unwrap();
+    writeln!(src, "    println!(\"Hello injm\")").unwrap();
+    writeln!(src, "    // injm end").unwrap();
+    writeln!(src, "}}").unwrap();
+
+    let mut dest = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(dest, "fn main() {{").unwrap();
+    writeln!(dest, "    println!(\"Greeting from injm\")").unwrap();
+    writeln!(dest, "    // injm begin >hello").unwrap();
+    writeln!(dest, "    // injm end").unwrap();
+    writeln!(dest, "}}").unwrap();
+
+    let status = injm_bin()
+        .arg("--input")
+        .arg(src.path())
+        .arg("--output")
+        .arg(dest.path())
+        .status()
+        .unwrap();
+
+    assert!(status.success());
+
+    let result = std::fs::read_to_string(dest.path()).unwrap();
+    assert!(result.contains("println!(\"Hello injm\")"));
+    assert!(result.contains("println!(\"Greeting from injm\")"));
+}
+
+#[test]
+fn test_map_missing_input_id_returns_error() {
+    let mut src = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(src, "fn main() {{").unwrap();
+    writeln!(src, "    // injm begin >hello").unwrap();
+    writeln!(src, "    println!(\"Hello injm\")").unwrap();
+    writeln!(src, "    // injm end").unwrap();
+    writeln!(src, "}}").unwrap();
+
+    let mut dest = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(dest, "fn main() {{").unwrap();
+    writeln!(dest, "    // injm begin <not_exist").unwrap();
+    writeln!(dest, "    // injm end").unwrap();
+    writeln!(dest, "}}").unwrap();
+
+    let status = injm_bin()
+        .arg("--input")
+        .arg(src.path())
+        .arg("--output")
+        .arg(dest.path())
+        .status()
+        .unwrap();
+
+    assert!(!status.success());
+}
+
+#[test]
+fn test_map_multiple_ids() {
+    let mut src = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(src, "fn main() {{").unwrap();
+    writeln!(src, "    // injm begin <first").unwrap();
+    writeln!(src, "    println!(\"first\")").unwrap();
+    writeln!(src, "    // injm end").unwrap();
+    writeln!(src, "    // injm begin <second").unwrap();
+    writeln!(src, "    println!(\"second\")").unwrap();
+    writeln!(src, "    // injm end").unwrap();
+    writeln!(src, "}}").unwrap();
+
+    let mut dest = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(dest, "fn main() {{").unwrap();
+    writeln!(dest, "    // injm begin >first").unwrap();
+    writeln!(dest, "    // injm end").unwrap();
+    writeln!(dest, "    // injm begin >second").unwrap();
+    writeln!(dest, "    // injm end").unwrap();
+    writeln!(dest, "}}").unwrap();
+
+    let status = injm_bin()
+        .arg("--input")
+        .arg(src.path())
+        .arg("--output")
+        .arg(dest.path())
+        .status()
+        .unwrap();
+
+    assert!(status.success());
+
+    let result = std::fs::read_to_string(dest.path()).unwrap();
+    assert!(result.contains("println!(\"first\")"));
+    assert!(result.contains("println!(\"second\")"));
+}
+
+#[test]
+fn test_map_dry_run() {
+    let mut src = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(src, "fn main() {{").unwrap();
+    writeln!(src, "    // injm begin <hello").unwrap();
+    writeln!(src, "    println!(\"Hello injm\")").unwrap();
+    writeln!(src, "    // injm end").unwrap();
+    writeln!(src, "}}").unwrap();
+
+    let mut dest = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(dest, "fn main() {{").unwrap();
+    writeln!(dest, "    // injm begin >hello").unwrap();
+    writeln!(dest, "    // injm end").unwrap();
+    writeln!(dest, "}}").unwrap();
+
+    let original = std::fs::read_to_string(dest.path()).unwrap();
+
+    let status = injm_bin()
+        .arg("--input")
+        .arg(src.path())
+        .arg("--output")
+        .arg(dest.path())
+        .arg("--dry-run")
+        .status()
+        .unwrap();
+
+    assert!(status.success());
+
+    let after = std::fs::read_to_string(dest.path()).unwrap();
+    assert_eq!(original, after);
+}
