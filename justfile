@@ -33,3 +33,7 @@ toc:
   # Generate ToC in README.md
   markdown-toc -i README.md
   prettier --write README.md
+
+lint:
+    # Run lint. 
+    cargo clippy
