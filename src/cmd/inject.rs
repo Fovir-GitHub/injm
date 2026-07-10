@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 use std::io::{self, Read};
 use std::path::PathBuf;
@@ -15,7 +16,14 @@ pub fn run(
     ids: Vec<OutputID>,
 ) -> Result<()> {
     let (output_content, output_blocks) = parse_file(&output)?;
-    let input_blocks = extract_input_blocks(input, ids)?;
+    let input_blocks = match input {
+        Some(input_file) => {
+            let (_, blocks) = parse_file(&input_file)?;
+            check_missing_ids(&output_blocks, &blocks)?;
+            blocks
+        }
+        None => stdin_blocks(ids)?,
+    };
 
     let replaced = inject(&output_content, &output_blocks, &input_blocks)?;
     if dry_run {
@@ -33,12 +41,19 @@ fn read_stdin() -> Result<String> {
     Ok(input)
 }
 
-fn extract_input_blocks(input: Option<PathBuf>, ids: Vec<OutputID>) -> Result<Vec<MarkerBlock>> {
-    if let Some(input_file) = input {
-        let (_, block) = parse_file(&input_file)?;
-        return Ok(block);
+fn check_missing_ids(output_blocks: &[MarkerBlock], input_blocks: &[MarkerBlock]) -> Result<()> {
+    let provided: HashSet<&String> = input_blocks.iter().flat_map(|b| &b.input_ids).collect();
+    for b in output_blocks {
+        if let Some(id) = &b.output_id {
+            if !provided.contains(id) {
+                return Err(format!("missing input id `{id}`").into());
+            }
+        }
     }
+    Ok(())
+}
 
+fn stdin_blocks(ids: Vec<OutputID>) -> Result<Vec<MarkerBlock>> {
     let stdin = read_stdin()?;
     let input_ids = ids.into_iter().flatten().collect();
     Ok(vec![MarkerBlock {
