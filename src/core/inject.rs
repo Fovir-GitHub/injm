@@ -11,25 +11,21 @@ pub fn inject(
     for block in output_blocks.iter().rev() {
         if let Some(input_block) = input_blocks.iter().find(|b| b.matches_output(block)) {
             match input_block.input_content.as_ref() {
-                Some(content) => lines = inject_into_a_block(lines, block, content),
+                Some(content) => lines = inject_into_a_block(&lines, block, content),
                 None => return Err("empty input content".into()),
             }
         }
     }
 
     let mut result = lines.join("\n");
-    if content.ends_with("\n") {
+    if content.ends_with('\n') {
         result.push('\n');
     }
 
     Ok(result)
 }
 
-fn inject_into_a_block<'a>(
-    lines: Vec<&'a str>,
-    block: &MarkerBlock,
-    stdin: &'a str,
-) -> Vec<&'a str> {
+fn inject_into_a_block<'a>(lines: &[&'a str], block: &MarkerBlock, stdin: &'a str) -> Vec<&'a str> {
     // Content to be replaced is in (begin_line, end_line).
     let before = lines[..=block.begin_line].to_vec();
     let after = lines[block.end_line..].to_vec();
@@ -328,7 +324,7 @@ old third
         let result = inject(
             content,
             &blocks,
-            &vec![MarkerBlock {
+            &[MarkerBlock {
                 input_content: None,
                 input_ids: vec![],
                 output_id: None,

@@ -7,7 +7,7 @@ pub(crate) fn extract_comments(content: &str, lang: &str) -> Result<Vec<Comment>
     // Query all comments.
     let mut config = ProcessConfig::new(lang);
     config.comments = true;
-    let result = process(&content, &config)?;
+    let result = process(content, &config)?;
     for comment in result.comments {
         comments.push(Comment {
             text: comment.text.trim().to_string(),
@@ -25,33 +25,33 @@ mod tests {
 
     #[test]
     fn test_extract_rust_comments() {
-        let content = r#"
+        let content = r"
 fn main() {
     // hello world
     let x = 1;
 }
-"#;
+";
         let comments = extract_comments(content, "rust").unwrap();
         assert!(comments.iter().any(|c| c.text.contains("hello world")));
     }
 
     #[test]
     fn test_extract_multiple_comments() {
-        let content = r#"
+        let content = r"
 // first comment
 fn main() {
     // second comment
 }
-"#;
+";
         let comments = extract_comments(content, "rust").unwrap();
         assert_eq!(comments.len(), 2);
     }
 
     #[test]
     fn test_comment_line_numbers() {
-        let content = r#"fn main() {
+        let content = r"fn main() {
     // hello
-}"#;
+}";
         let comments = extract_comments(content, "rust").unwrap();
         assert_eq!(comments.len(), 1);
         assert_eq!(comments[0].start_line, 1);
@@ -60,31 +60,31 @@ fn main() {
 
     #[test]
     fn test_no_comments() {
-        let content = r#"
+        let content = r"
 fn main() {
     let x = 1;
 }
-"#;
+";
         let comments = extract_comments(content, "rust").unwrap();
         assert_eq!(comments.len(), 0);
     }
 
     #[test]
     fn test_extract_go_comments() {
-        let content = r#"
+        let content = r"
 // first comment
 // second comment
 // third comment
 func main() {
 }
-"#;
+";
         let comments = extract_comments(content, "go").unwrap();
         assert_eq!(comments.len(), 3);
     }
 
     #[test]
     fn test_extract_block_comments() {
-        let content = r#"
+        let content = r"
 /*
  This is a
  multiple
@@ -92,29 +92,29 @@ func main() {
  (aka block comment)
  */
 int main(void) {}
-"#;
+";
         let comments = extract_comments(content, "c").unwrap();
         assert_eq!(comments.len(), 1);
     }
 
     #[test]
     fn test_extract_python_comments() {
-        let content = r#"
+        let content = r"
 # hello world
 def main():
     pass
-"#;
+";
         let comments = extract_comments(content, "python").unwrap();
         assert!(comments.iter().any(|c| c.text.contains("hello world")));
     }
 
     #[test]
     fn test_extract_latex_comments() {
-        let content = r#"
+        let content = r"
 \section{injm}
 
 % hello tex
-"#;
+";
         let comments = extract_comments(content, "latex").unwrap();
         assert!(comments.iter().any(|c| c.text.contains("hello tex")));
     }

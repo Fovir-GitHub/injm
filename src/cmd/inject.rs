@@ -44,10 +44,10 @@ fn read_stdin() -> Result<String> {
 fn check_missing_ids(output_blocks: &[MarkerBlock], input_blocks: &[MarkerBlock]) -> Result<()> {
     let provided: HashSet<&String> = input_blocks.iter().flat_map(|b| &b.input_ids).collect();
     for b in output_blocks {
-        if let Some(id) = &b.output_id {
-            if !provided.contains(id) {
-                return Err(format!("missing input id `{id}`").into());
-            }
+        if let Some(id) = &b.output_id
+            && !provided.contains(id)
+        {
+            return Err(format!("missing input id `{id}`").into());
         }
     }
     Ok(())
@@ -60,7 +60,7 @@ fn stdin_blocks(ids: Vec<OutputID>) -> Result<Vec<MarkerBlock>> {
         input_content: Some(stdin),
         begin_line: 0,
         end_line: 0,
-        input_ids: input_ids,
+        input_ids,
         output_id: None,
     }])
 }

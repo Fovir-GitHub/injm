@@ -10,10 +10,10 @@ pub(crate) fn detect(path: &Path) -> Result<&'static str> {
     }
 
     // Detect from shebang line.
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Some(lang) = tree_sitter_language_pack::detect_language_from_content(&content) {
-            return Ok(lang);
-        }
+    if let Ok(content) = fs::read_to_string(path)
+        && let Some(lang) = tree_sitter_language_pack::detect_language_from_content(&content)
+    {
+        return Ok(lang);
     }
 
     Err("unsupported file type".into())

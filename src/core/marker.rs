@@ -44,11 +44,11 @@ pub(crate) fn extract_marker_blocks(
                     let end_line = comment.start_line;
 
                     // Extract input contents.
-                    let input_content = if !input_ids.is_empty() {
+                    let input_content = if input_ids.is_empty() {
+                        None
+                    } else {
                         let lines: Vec<&str> = content.lines().collect();
                         Some(lines[begin_line + 1..end_line].join("\n"))
-                    } else {
-                        None
                     };
 
                     marker_blocks.push(MarkerBlock {
@@ -56,7 +56,7 @@ pub(crate) fn extract_marker_blocks(
                         end_line,
                         input_ids: mem::take(&mut input_ids),
                         output_id: mem::take(&mut output_id),
-                        input_content: input_content,
+                        input_content,
                     });
                 }
                 None => {
@@ -72,7 +72,7 @@ pub(crate) fn extract_marker_blocks(
 
     // Check unclosed `injm begin`.
     match begin {
-        Some(b) => Err(format!("found `injm begin` without `injm end` at line {}", b).into()),
+        Some(b) => Err(format!("found `injm begin` without `injm end` at line {b}").into()),
         None => Ok(marker_blocks),
     }
 }
@@ -80,11 +80,11 @@ pub(crate) fn extract_marker_blocks(
 fn extract_id(comment: &str) -> Result<(Vec<String>, OutputID)> {
     let input_tokens: Vec<&str> = comment
         .split_whitespace()
-        .filter(|t| t.starts_with("<"))
+        .filter(|t| t.starts_with('<'))
         .collect();
     let output_tokens: Vec<&str> = comment
         .split_whitespace()
-        .filter(|t| t.starts_with(">"))
+        .filter(|t| t.starts_with('>'))
         .collect();
 
     let input_ids = input_tokens.iter().map(|t| t[1..].to_string()).collect();
@@ -181,14 +181,14 @@ mod tests {
     #[test]
     fn test_extract_id_no_markers() {
         let (input, output) = extract_id("// injm begin").unwrap();
-        assert_eq!(input.is_empty(), true);
+        assert!(input.is_empty());
         assert_eq!(output, None);
     }
 
     #[test]
     fn test_extract_id_with_output() {
         let (input, output) = extract_id("// injm begin >first").unwrap();
-        assert_eq!(input.is_empty(), true);
+        assert!(input.is_empty());
         assert_eq!(output, Some("first".to_string()));
     }
 
@@ -220,7 +220,7 @@ mod tests {
         ];
         let blocks = extract_marker_blocks(&comments, "").unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(blocks[0].input_ids.is_empty(), true);
+        assert!(blocks[0].input_ids.is_empty());
         assert_eq!(blocks[0].output_id, None);
     }
 
@@ -304,7 +304,7 @@ println!(\"Hello\")
         ];
         let blocks = extract_marker_blocks(&comments, content).unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(blocks[0].input_ids.is_empty(), true);
+        assert!(blocks[0].input_ids.is_empty());
         assert_eq!(blocks[0].input_content, None);
     }
 
