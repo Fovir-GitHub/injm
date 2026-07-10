@@ -14,6 +14,16 @@ pub struct MarkerBlock {
     pub output_id: OutputID,
 }
 
+impl MarkerBlock {
+    // input block matches output block.
+    pub fn matches_output(&self, output: &MarkerBlock) -> bool {
+        match output.output_id.as_ref() {
+            Some(id) => self.input_ids.contains(id),
+            None => self.input_ids.is_empty(),
+        }
+    }
+}
+
 pub fn extract_marker_blocks(comments: &[Comment], content: &str) -> Result<Vec<MarkerBlock>> {
     let mut marker_blocks: Vec<MarkerBlock> = Vec::new();
     let mut begin: Option<usize> = None; // Record the line of `injm begin`.
