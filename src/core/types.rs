@@ -19,3 +19,8 @@ pub struct MarkerBlock {
     pub input_content: Option<String>,
     pub output_id: OutputID,
 }
+
+pub struct ParsedFile {
+    pub content: String,
+    pub blocks: Vec<MarkerBlock>,
+}

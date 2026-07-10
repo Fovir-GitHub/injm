@@ -15,17 +15,17 @@ pub fn run(
     dry_run: bool,
     ids: Vec<OutputID>,
 ) -> Result<()> {
-    let (output_content, output_blocks) = parse_file(&output)?;
+    let output_file = parse_file(&output)?;
     let input_blocks = match input {
-        Some(input_file) => {
-            let (_, blocks) = parse_file(&input_file)?;
-            check_missing_ids(&output_blocks, &blocks)?;
-            blocks
+        Some(i) => {
+            let input_file = parse_file(&i)?;
+            check_missing_ids(&output_file.blocks, &input_file.blocks)?;
+            input_file.blocks
         }
         None => stdin_blocks(ids)?,
     };
 
-    let replaced = inject(&output_content, &output_blocks, &input_blocks)?;
+    let replaced = inject(&output_file.content, &output_file.blocks, &input_blocks)?;
     if dry_run {
         println!("{replaced}");
     } else {
