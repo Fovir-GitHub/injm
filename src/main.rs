@@ -1,15 +1,11 @@
-mod checker;
 mod cli;
-mod detector;
-mod extractor;
-mod injector;
+mod core;
 mod io;
-mod marker;
-mod types;
 
-use crate::{extractor::extract_comments, marker::MarkerBlock, types::Result};
+use crate::core::parse::parse_file;
+use crate::core::types::{MarkerBlock, Result};
 use clap::Parser;
-use std::{fs, path::Path, vec};
+use std::{fs, vec};
 
 fn main() -> Result<()> {
     let cli = cli::Cli::parse();
@@ -41,7 +37,7 @@ fn main() -> Result<()> {
         }
     };
 
-    let replaced = injector::inject(&output_content, &output_blocks, &input_blocks)?;
+    let replaced = core::inject::inject(&output_content, &output_blocks, &input_blocks)?;
     if cli.dry_run {
         println!("{}", replaced);
     } else {
@@ -49,13 +45,4 @@ fn main() -> Result<()> {
     }
 
     Ok(())
-}
-
-fn parse_file(path: &Path) -> Result<(String, Vec<MarkerBlock>)> {
-    checker::check_file(path)?;
-    let lang = detector::detect(path)?;
-    let content = fs::read_to_string(path)?;
-    let comments = extract_comments(&content, lang)?;
-    let blocks = marker::extract_marker_blocks(&comments, &content)?;
-    Ok((content, blocks))
 }

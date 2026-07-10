@@ -1,4 +1,4 @@
-use crate::types::Result;
+use crate::core::types::Result;
 use std::io::{self, Read};
 
 pub fn read_stdin() -> Result<String> {

@@ -1,18 +1,6 @@
 use std::mem;
 
-use crate::extractor::Comment;
-use crate::types::{OutputID, Result};
-
-pub struct MarkerBlock {
-    pub begin_line: usize,
-    pub end_line: usize,
-
-    // Allow multiple input markers,
-    // while a block can have at most one output marker.
-    pub input_ids: Vec<String>,
-    pub input_content: Option<String>,
-    pub output_id: OutputID,
-}
+use crate::core::types::{Comment, MarkerBlock, OutputID, Result};
 
 impl MarkerBlock {
     // input block matches output block.
