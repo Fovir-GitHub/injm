@@ -238,14 +238,14 @@ fn test_map_between_files() {
 fn test_map_missing_input_id_returns_error() {
     let mut src = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
     writeln!(src, "fn main() {{").unwrap();
-    writeln!(src, "    // injm begin >hello").unwrap();
+    writeln!(src, "    // injm begin <hello").unwrap();
     writeln!(src, "    println!(\"Hello injm\")").unwrap();
     writeln!(src, "    // injm end").unwrap();
     writeln!(src, "}}").unwrap();
 
     let mut dest = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
     writeln!(dest, "fn main() {{").unwrap();
-    writeln!(dest, "    // injm begin <not_exist").unwrap();
+    writeln!(dest, "    // injm begin >not_exist").unwrap();
     writeln!(dest, "    // injm end").unwrap();
     writeln!(dest, "}}").unwrap();
 
