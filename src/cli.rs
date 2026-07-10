@@ -11,6 +11,9 @@ use crate::types::OutputID;
 )]
 pub struct Cli {
     #[arg(short, long)]
+    pub input: Option<PathBuf>,
+
+    #[arg(short, long)]
     pub output: PathBuf,
 
     #[arg(long)]
