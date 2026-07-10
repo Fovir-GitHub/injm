@@ -98,8 +98,8 @@ fn main() {
 
 Synchronize directories.
 
+- [ ] Accept glob as input and output
 - [ ] Scan supported source files recursively
-- [ ] Accept directories as input and output
 - [ ] Create `list` subcommand to list all marker regions
 
 ## v0.6.0
