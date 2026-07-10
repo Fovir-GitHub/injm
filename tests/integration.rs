@@ -5,6 +5,17 @@ fn injm_bin() -> Command {
     Command::new(env!("CARGO_BIN_EXE_injm"))
 }
 
+fn inject_stdin(path: &std::path::Path, input: &[u8]) -> std::process::ExitStatus {
+    let mut child = injm_bin()
+        .arg("--output")
+        .arg(path)
+        .stdin(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let _ = child.stdin.as_mut().unwrap().write_all(input);
+    child.wait().unwrap()
+}
+
 #[test]
 fn test_basic_injection() {
     let mut f = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
@@ -325,4 +336,48 @@ fn test_map_dry_run() {
 
     let after = std::fs::read_to_string(dest.path()).unwrap();
     assert_eq!(original, after);
+}
+
+#[test]
+fn test_unclosed_marker_returns_error() {
+    let mut f = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(f, "fn main() {{").unwrap();
+    writeln!(f, "    // injm begin").unwrap();
+    writeln!(f, "}}").unwrap();
+
+    let status = inject_stdin(f.path(), b"x");
+    assert!(!status.success());
+}
+
+#[test]
+fn test_map_input_file_not_exist_returns_error() {
+    let mut dest = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(dest, "// injm begin >hello").unwrap();
+    writeln!(dest, "// injm end").unwrap();
+
+    let status = injm_bin()
+        .arg("--input")
+        .arg("not_exist_input.rs")
+        .arg("--output")
+        .arg(dest.path())
+        .status()
+        .unwrap();
+
+    assert!(!status.success());
+}
+
+#[test]
+fn test_reinjection_replaces_content() {
+    let mut f = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(f, "// injm begin").unwrap();
+    writeln!(f, "// injm end").unwrap();
+
+    assert!(inject_stdin(f.path(), b"first content").success());
+    assert!(inject_stdin(f.path(), b"second content").success());
+
+    let result = std::fs::read_to_string(f.path()).unwrap();
+    assert!(result.contains("second content"));
+    assert!(!result.contains("first content"));
+    assert!(result.contains("// injm begin"));
+    assert!(result.contains("// injm end"));
 }
