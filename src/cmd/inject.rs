@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 use std::fs;
 use std::io::{self, Read};
-use std::path::PathBuf;
 
 use crate::core::inject::inject;
 use crate::core::{
@@ -9,12 +8,7 @@ use crate::core::{
     types::{MarkerBlock, OutputID, Result},
 };
 
-pub fn run(
-    input: Option<PathBuf>,
-    output: PathBuf,
-    dry_run: bool,
-    ids: Vec<OutputID>,
-) -> Result<()> {
+pub fn run(input: Option<String>, output: String, dry_run: bool, ids: Vec<OutputID>) -> Result<()> {
     let output_file = parse_file(&output)?;
     let input_blocks = match input {
         Some(i) => {

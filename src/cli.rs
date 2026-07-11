@@ -1,5 +1,4 @@
 use clap::Parser;
-use std::path::PathBuf;
 
 use crate::core::types::OutputID;
 
@@ -11,10 +10,10 @@ use crate::core::types::OutputID;
 )]
 pub struct Cli {
     #[arg(short, long)]
-    pub input: Option<PathBuf>,
+    pub input: Option<String>,
 
     #[arg(short, long)]
-    pub output: PathBuf,
+    pub output: String,
 
     #[arg(long)]
     pub dry_run: bool,
