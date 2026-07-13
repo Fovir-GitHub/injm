@@ -42,8 +42,16 @@ fn check_missing_ids(output_blocks: &[MarkerBlock], input_blocks: &[MarkerBlock]
             && !provided.contains(id)
         {
             return Err(format!("missing input id `{id}`").into());
+
+fn check_duplicated_ids(blocks: &[MarkerBlock]) -> Result<()> {
+    let mut seen = HashSet::new();
+
+    for id in blocks.iter().flat_map(|block| block.input_ids.iter()) {
+        if !seen.insert(id) {
+            return Err(format!("duplicated input id `{id}`").into());
         }
     }
+
     Ok(())
 }
 
