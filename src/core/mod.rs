@@ -3,5 +3,5 @@ mod detector;
 mod extractor;
 pub mod inject;
 mod marker;
-pub mod parse;
+pub mod parser;
 pub mod types;
