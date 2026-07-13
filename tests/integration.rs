@@ -1,12 +1,14 @@
 use std::io::Write;
 use std::process::Command;
 
-fn injm_bin() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_injm"))
+fn injm_bin_inject() -> Command {
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_injm"));
+    cmd.arg("inject");
+    cmd
 }
 
 fn inject_stdin(path: &std::path::Path, input: &[u8]) -> std::process::ExitStatus {
-    let mut child = injm_bin()
+    let mut child = injm_bin_inject()
         .arg("--output")
         .arg(path)
         .stdin(std::process::Stdio::piped())
@@ -24,14 +26,14 @@ fn test_basic_injection() {
     writeln!(f, "    // injm end").unwrap();
     writeln!(f, "}}").unwrap();
 
-    let _output = injm_bin()
+    let _output = injm_bin_inject()
         .arg("--output")
         .arg(f.path())
         .stdin(std::process::Stdio::piped())
         .output()
         .unwrap();
 
-    let mut child = injm_bin()
+    let mut child = injm_bin_inject()
         .arg("--output")
         .arg(f.path())
         .stdin(std::process::Stdio::piped())
@@ -61,7 +63,7 @@ fn test_dry_run() {
 
     let original = std::fs::read_to_string(f.path()).unwrap();
 
-    let mut child = injm_bin()
+    let mut child = injm_bin_inject()
         .arg("--output")
         .arg(f.path())
         .arg("--dry-run")
@@ -87,7 +89,7 @@ fn test_binary_file_returns_error() {
     let mut f = tempfile::NamedTempFile::new().unwrap();
     f.write_all(&[0x00, 0x01, 0x02, 0x03]).unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--output")
         .arg(f.path())
         .stdin(std::process::Stdio::piped())
@@ -99,7 +101,7 @@ fn test_binary_file_returns_error() {
 
 #[test]
 fn test_file_not_exist_returns_error() {
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--output")
         .arg("not_exist.rs")
         .stdin(std::process::Stdio::piped())
@@ -119,7 +121,7 @@ fn test_inject_with_id() {
     writeln!(f, "    // injm end").unwrap();
     writeln!(f, "}}").unwrap();
 
-    let mut child = injm_bin()
+    let mut child = injm_bin_inject()
         .arg("--output")
         .arg(f.path())
         .arg("--id")
@@ -156,7 +158,7 @@ fn test_inject_multiple_ids() {
     writeln!(f, "    // injm end").unwrap();
     writeln!(f, "}}").unwrap();
 
-    let mut child = injm_bin()
+    let mut child = injm_bin_inject()
         .arg("--output")
         .arg(f.path())
         .arg("--id")
@@ -194,7 +196,7 @@ fn test_inject_all_when_no_id_specified() {
     writeln!(f, "    // injm end").unwrap();
     writeln!(f, "}}").unwrap();
 
-    let mut child = injm_bin()
+    let mut child = injm_bin_inject()
         .arg("--output")
         .arg(f.path())
         .stdin(std::process::Stdio::piped())
@@ -230,7 +232,7 @@ fn test_map_between_files() {
     writeln!(dest, "    // injm end").unwrap();
     writeln!(dest, "}}").unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg(src.path())
         .arg("--output")
@@ -260,7 +262,7 @@ fn test_map_missing_input_id_returns_error() {
     writeln!(dest, "    // injm end").unwrap();
     writeln!(dest, "}}").unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg(src.path())
         .arg("--output")
@@ -291,7 +293,7 @@ fn test_map_multiple_ids() {
     writeln!(dest, "    // injm end").unwrap();
     writeln!(dest, "}}").unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg(src.path())
         .arg("--output")
@@ -323,7 +325,7 @@ fn test_map_dry_run() {
 
     let original = std::fs::read_to_string(dest.path()).unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg(src.path())
         .arg("--output")
@@ -355,7 +357,7 @@ fn test_map_input_file_not_exist_returns_error() {
     writeln!(dest, "// injm begin >hello").unwrap();
     writeln!(dest, "// injm end").unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg("not_exist_input.rs")
         .arg("--output")
@@ -391,7 +393,7 @@ fn test_glob_multiple_output_files() {
         std::fs::write(&path, "// injm begin\n// injm end\n").unwrap();
     }
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--output")
         .arg(dir.path().join("*.rs"))
         .stdin(std::process::Stdio::piped())
@@ -410,7 +412,7 @@ fn test_glob_multiple_output_files() {
 fn test_glob_no_match_returns_error() {
     let dir = tempfile::tempdir().unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--output")
         .arg(dir.path().join("*.rs"))
         .stdin(std::process::Stdio::piped())
@@ -451,7 +453,7 @@ println!("world");
     writeln!(dest, "// injm begin >world").unwrap();
     writeln!(dest, "// injm end").unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg(dir.path().join("*.rs"))
         .arg("--output")
@@ -480,7 +482,7 @@ fn test_output_glob() {
         std::fs::write(dir.path().join(name), "// injm begin >hello\n// injm end\n").unwrap();
     }
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg(src.path())
         .arg("--output")
@@ -514,7 +516,7 @@ fn test_recursive_glob() {
     )
     .unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--output")
         .arg(dir.path().join("**/*.rs"))
         .stdin(std::process::Stdio::piped())
@@ -552,7 +554,7 @@ println!("b");
     writeln!(dest, "// injm begin >hello").unwrap();
     writeln!(dest, "// injm end").unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg(dir.path().join("*.rs"))
         .arg("--output")
@@ -581,7 +583,7 @@ fn test_multiple_input_files() {
     writeln!(dest, "// injm begin >world").unwrap();
     writeln!(dest, "// injm end").unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg(src1.path())
         .arg(src2.path())
@@ -612,7 +614,7 @@ fn test_multiple_output_files() {
     writeln!(out2, "// injm begin >hello").unwrap();
     writeln!(out2, "// injm end").unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg(src.path())
         .arg("--output")
@@ -657,7 +659,7 @@ fn test_multiple_input_globs() {
     writeln!(dest, "// injm begin >world").unwrap();
     writeln!(dest, "// injm end").unwrap();
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg(dir1.join("*.rs"))
         .arg(dir2.join("*.rs"))
@@ -692,7 +694,7 @@ fn test_multiple_output_globs() {
         std::fs::write(&path, "// injm begin >hello\n// injm end\n").unwrap();
     }
 
-    let status = injm_bin()
+    let status = injm_bin_inject()
         .arg("--input")
         .arg(src.path())
         .arg("--output")

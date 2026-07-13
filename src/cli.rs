@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Args, Parser, Subcommand};
 
 use crate::core::types::OutputID;
 
@@ -9,6 +9,18 @@ use crate::core::types::OutputID;
     version
 )]
 pub struct Cli {
+    #[command(subcommand)]
+    pub command: Commands,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    Inject(InjectArgs),
+    List(ListArgs),
+}
+
+#[derive(Args)]
+pub struct InjectArgs {
     #[arg(short, long, num_args = 1..)]
     pub input: Vec<String>,
 
@@ -20,4 +32,10 @@ pub struct Cli {
 
     #[arg(long)]
     pub id: Vec<OutputID>,
+}
+
+#[derive(Args)]
+pub struct ListArgs {
+    #[arg(short,long,num_args=1..)]
+    pub input: Vec<String>,
 }
