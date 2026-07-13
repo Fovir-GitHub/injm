@@ -16,7 +16,7 @@ fn parse_file(path: &str) -> Result<ParsedFile> {
     let lang = core::detector::detect(path)?;
     let content = fs::read_to_string(path)?;
     let comments = core::extractor::extract_comments(&content, lang)?;
-    let blocks = core::marker::extract_marker_blocks(&comments, &content)?;
+    let blocks = core::marker::extract_marker_blocks(&comments, &content, path)?;
     Ok(ParsedFile {
         content,
         blocks,
