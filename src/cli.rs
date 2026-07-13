@@ -1,6 +1,7 @@
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::{Args, Parser, Subcommand};
 
 use crate::core::types::OutputID;
+use crate::output::OutputFormat;
 
 #[derive(Parser)]
 #[command(
@@ -41,10 +42,4 @@ pub struct ListArgs {
 
     #[arg(long, short, default_value = "table")]
     pub format: OutputFormat,
-}
-
-#[derive(Clone, ValueEnum)]
-pub enum OutputFormat {
-    Table,
-    Json,
 }

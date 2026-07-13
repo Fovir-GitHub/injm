@@ -1,8 +1,14 @@
+use clap::ValueEnum;
 use serde::Serialize;
 use tabled::{Table, Tabled};
 
-use crate::cli::OutputFormat;
 use crate::core::types::Result;
+
+#[derive(Clone, ValueEnum)]
+pub enum OutputFormat {
+    Table,
+    Json,
+}
 
 pub fn print<T>(rows: &[T], format: OutputFormat) -> Result<()>
 where

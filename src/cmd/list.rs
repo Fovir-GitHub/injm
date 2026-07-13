@@ -1,6 +1,6 @@
-use crate::cli::OutputFormat;
 use crate::core::parser::parse_patterns;
 use crate::core::types::{MarkerInfo, MarkerType, Result};
+use crate::output::OutputFormat;
 use crate::output::print;
 
 pub fn run(input: Vec<String>, format: OutputFormat) -> Result<()> {
