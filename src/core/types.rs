@@ -23,4 +23,5 @@ pub struct MarkerBlock {
 pub struct ParsedFile {
     pub content: String,
     pub blocks: Vec<MarkerBlock>,
+    pub path: String,
 }

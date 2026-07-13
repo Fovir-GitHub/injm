@@ -3,27 +3,38 @@ use std::fs;
 use std::io::{self, Read};
 
 use crate::core::inject::inject;
-use crate::core::{
-    parse::parse_file,
-    types::{MarkerBlock, OutputID, Result},
-};
+use crate::core::parser::parse_patterns;
+use crate::core::types::ParsedFile;
+use crate::core::types::{MarkerBlock, OutputID, Result};
 
-pub fn run(input: Option<String>, output: String, dry_run: bool, ids: Vec<OutputID>) -> Result<()> {
-    let output_file = parse_file(&output)?;
-    let input_blocks = match input {
-        Some(i) => {
-            let input_file = parse_file(&i)?;
-            check_missing_ids(&output_file.blocks, &input_file.blocks)?;
-            input_file.blocks
-        }
-        None => stdin_blocks(ids)?,
+pub fn run(
+    input: Vec<String>,
+    output: Vec<String>,
+    dry_run: bool,
+    ids: Vec<OutputID>,
+) -> Result<()> {
+    let output_files = parse_patterns(&output)?;
+
+    let input_blocks: Vec<MarkerBlock> = if input.is_empty() {
+        stdin_blocks(ids)?
+    } else {
+        let input_files = parse_patterns(&input)?;
+        check_missing_ids(&output_files, &input_files)?;
+        input_files
+            .into_iter()
+            .flat_map(|file| file.blocks)
+            .collect()
     };
 
-    let replaced = inject(&output_file.content, &output_file.blocks, &input_blocks)?;
-    if dry_run {
-        println!("{replaced}");
-    } else {
-        fs::write(output, replaced)?;
+    check_duplicated_ids(&input_blocks)?;
+
+    for output_file in output_files {
+        let replaced = inject(&output_file.content, &output_file.blocks, &input_blocks)?;
+        if dry_run {
+            println!("{replaced}");
+        } else {
+            fs::write(output_file.path, replaced)?;
+        }
     }
 
     Ok(())
@@ -35,13 +46,24 @@ fn read_stdin() -> Result<String> {
     Ok(input)
 }
 
-fn check_missing_ids(output_blocks: &[MarkerBlock], input_blocks: &[MarkerBlock]) -> Result<()> {
-    let provided: HashSet<&String> = input_blocks.iter().flat_map(|b| &b.input_ids).collect();
-    for b in output_blocks {
-        if let Some(id) = &b.output_id
-            && !provided.contains(id)
-        {
-            return Err(format!("missing input id `{id}`").into());
+fn check_missing_ids(output_files: &[ParsedFile], input_files: &[ParsedFile]) -> Result<()> {
+    let provided: HashSet<&String> = input_files
+        .iter()
+        .flat_map(|file| file.blocks.iter())
+        .flat_map(|block| block.input_ids.iter())
+        .collect();
+
+    if let Some(id) = output_files
+        .iter()
+        .flat_map(|file| file.blocks.iter())
+        .filter_map(|block| block.output_id.as_ref())
+        .find(|id| !provided.contains(*id))
+    {
+        return Err(format!("missing input id `{id}`").into());
+    }
+
+    Ok(())
+}
 
 fn check_duplicated_ids(blocks: &[MarkerBlock]) -> Result<()> {
     let mut seen = HashSet::new();
