@@ -1,4 +1,5 @@
-use crate::core::types::Result;
+use crate::core::types::{MarkerBlock, ParsedFile, Result};
+use std::collections::HashSet;
 use std::fs;
 
 pub(crate) fn check_file(path: &str) -> Result<()> {
@@ -8,6 +9,37 @@ pub(crate) fn check_file(path: &str) -> Result<()> {
 
     if is_binary_file(path)? {
         return Err("binary file".into());
+    }
+
+    Ok(())
+}
+
+pub fn check_missing_ids(output_files: &[ParsedFile], input_files: &[ParsedFile]) -> Result<()> {
+    let provided: HashSet<&String> = input_files
+        .iter()
+        .flat_map(|file| file.blocks.iter())
+        .flat_map(|block| block.input_ids.iter())
+        .collect();
+
+    if let Some(id) = output_files
+        .iter()
+        .flat_map(|file| file.blocks.iter())
+        .filter_map(|block| block.output_id.as_ref())
+        .find(|id| !provided.contains(*id))
+    {
+        return Err(format!("missing input id `{id}`").into());
+    }
+
+    Ok(())
+}
+
+pub fn check_duplicated_ids(blocks: &[MarkerBlock]) -> Result<()> {
+    let mut seen = HashSet::new();
+
+    for id in blocks.iter().flat_map(|block| block.input_ids.iter()) {
+        if !seen.insert(id) {
+            return Err(format!("duplicated input id `{id}`").into());
+        }
     }
 
     Ok(())

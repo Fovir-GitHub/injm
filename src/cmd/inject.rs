@@ -1,10 +1,9 @@
-use std::collections::HashSet;
 use std::fs;
 use std::io::{self, Read};
 
+use crate::core::checker::{check_duplicated_ids, check_missing_ids};
 use crate::core::inject::inject;
 use crate::core::parser::parse_patterns;
-use crate::core::types::ParsedFile;
 use crate::core::types::{MarkerBlock, OutputID, Result};
 
 pub fn run(
@@ -45,38 +44,6 @@ fn read_stdin() -> Result<String> {
     io::stdin().read_to_string(&mut input)?;
     Ok(input)
 }
-
-fn check_missing_ids(output_files: &[ParsedFile], input_files: &[ParsedFile]) -> Result<()> {
-    let provided: HashSet<&String> = input_files
-        .iter()
-        .flat_map(|file| file.blocks.iter())
-        .flat_map(|block| block.input_ids.iter())
-        .collect();
-
-    if let Some(id) = output_files
-        .iter()
-        .flat_map(|file| file.blocks.iter())
-        .filter_map(|block| block.output_id.as_ref())
-        .find(|id| !provided.contains(*id))
-    {
-        return Err(format!("missing input id `{id}`").into());
-    }
-
-    Ok(())
-}
-
-fn check_duplicated_ids(blocks: &[MarkerBlock]) -> Result<()> {
-    let mut seen = HashSet::new();
-
-    for id in blocks.iter().flat_map(|block| block.input_ids.iter()) {
-        if !seen.insert(id) {
-            return Err(format!("duplicated input id `{id}`").into());
-        }
-    }
-
-    Ok(())
-}
-
 fn stdin_blocks(ids: Vec<OutputID>) -> Result<Vec<MarkerBlock>> {
     let stdin = read_stdin()?;
     let input_ids = ids.into_iter().flatten().collect();

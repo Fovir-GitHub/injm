@@ -1,4 +1,4 @@
-mod checker;
+pub mod checker;
 mod detector;
 mod extractor;
 pub mod inject;
