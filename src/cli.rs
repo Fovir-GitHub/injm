@@ -1,5 +1,4 @@
-use clap::Parser;
-use std::path::PathBuf;
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::core::types::OutputID;
 
@@ -10,15 +9,42 @@ use crate::core::types::OutputID;
     version
 )]
 pub struct Cli {
-    #[arg(short, long)]
-    pub input: Option<PathBuf>,
+    #[command(subcommand)]
+    pub command: Commands,
+}
 
-    #[arg(short, long)]
-    pub output: PathBuf,
+#[derive(Subcommand)]
+pub enum Commands {
+    Inject(InjectArgs),
+    List(ListArgs),
+}
+
+#[derive(Args)]
+pub struct InjectArgs {
+    #[arg(short, long, num_args = 1..)]
+    pub input: Vec<String>,
+
+    #[arg(short, long, num_args = 1..)]
+    pub output: Vec<String>,
 
     #[arg(long)]
     pub dry_run: bool,
 
     #[arg(long)]
     pub id: Vec<OutputID>,
+}
+
+#[derive(Args)]
+pub struct ListArgs {
+    #[arg(num_args=1..)]
+    pub input: Vec<String>,
+
+    #[arg(long, short, default_value = "table")]
+    pub format: OutputFormat,
+}
+
+#[derive(Clone, ValueEnum)]
+pub enum OutputFormat {
+    Table,
+    Json,
 }

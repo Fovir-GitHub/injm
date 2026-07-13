@@ -40,6 +40,7 @@
             clippy
             just
             markdown-toc
+            pre-commit
             rust-analyzer
             rustc
             rustfmt

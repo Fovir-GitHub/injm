@@ -11,8 +11,11 @@ A CLI tool that injects content into marked regions in source files.
   - [Nix](#nix)
   - [Download Binary](#download-binary)
 - [Usage](#usage)
+  - [Basic Injection](#basic-injection)
   - [Inject into a Specific Region](#inject-into-a-specific-region)
   - [Sync Between Files](#sync-between-files)
+  - [Multiple Files and Globs](#multiple-files-and-globs)
+  - [List Markers](#list-markers)
   - [Dry Run](#dry-run)
 - [Supported Languages](#supported-languages)
 - [Roadmap](#roadmap)
@@ -41,6 +44,10 @@ Download the latest binary for your platform from [GitHub Releases](https://gith
 
 ## Usage
 
+`injm` uses subcommands. The main one is `inject`:
+
+### Basic Injection
+
 Mark a region in your source file with `injm begin` and `injm end` comments:
 
 `dest.rs`
@@ -55,7 +62,7 @@ fn main() {
 Then pipe content into `injm`:
 
 ```bash
-echo -n 'println!("Hello, world!")' | injm --output dest.rs
+echo -n 'println!("Hello, world!")' | injm inject --output dest.rs
 ```
 
 Result:
@@ -70,10 +77,10 @@ println!("Hello, world!");
 }
 ```
 
-Running `injm` again will replace the content between the markers:
+Running `injm inject` again will replace the content between the markers:
 
 ```bash
-cat src.txt | injm --output dest.rs
+cat src.txt | injm inject --output dest.rs
 ```
 
 ### Inject into a Specific Region
@@ -95,13 +102,13 @@ fn main() {
 Inject into a specific region:
 
 ```bash
-echo -n 'println!("Hello!")' | injm --output dest.rs --id greeting
+echo -n 'println!("Hello!")' | injm inject --output dest.rs --id greeting
 ```
 
 Inject into multiple regions at once:
 
 ```bash
-echo -n 'println!("Hello!")' | injm --output dest.rs --id greeting --id farewell
+echo -n 'println!("Hello!")' | injm inject --output dest.rs --id greeting --id farewell
 ```
 
 If `--id` is not specified, only regions **without** an ID are injected; regions with a `>id` are left untouched.
@@ -134,7 +141,7 @@ fn main() {
 Then sync:
 
 ```bash
-injm --input src.rs --output dest.rs
+injm inject --input src.rs --output dest.rs
 ```
 
 `dest.rs` becomes:
@@ -151,12 +158,61 @@ A region may read from several sources by listing multiple `<id` markers.
 If a `>id` in the output has no matching `<id` in the input, `injm` reports
 the missing ID and exits with an error.
 
+### Multiple Files and Globs
+
+`--input` and `--output` accept multiple values and glob patterns:
+
+```bash
+# Multiple explicit files
+injm inject --input src1.rs src2.rs --output dest.rs
+
+# Sync to multiple outputs
+injm inject --input src.rs --output out1.rs out2.rs
+
+# Glob patterns
+injm inject --input "src/**/*.rs" --output "docs/"
+
+# Multiple globs
+injm inject --input "mod_a/**/*.rs" "mod_b/**/*.rs" --output dest.rs
+```
+
+### List Markers
+
+Preview all marker regions across files:
+
+```bash
+injm list src/
+```
+
+Output:
+
+```
++-------------+----------+--------+-------+
+| File        | ID       | Type   | Lines |
++-------------+----------+--------+-------+
+| src/main.rs | hello    | output | 6-7   |
++-------------+----------+--------+-------+
+| src/main.rs | hello    | input  | 23-24 |
++-------------+----------+--------+-------+
+| src/cli.rs  | greeting | input  | 1-2   |
++-------------+----------+--------+-------+
+```
+
+JSON output:
+
+```bash
+injm list src/ --format json
+```
+
+Accepts positional arguments (files, globs, or directories). Falls back to
+current directory when no argument is given.
+
 ### Dry Run
 
 Preview the result without writing to the file:
 
 ```bash
-cat src.txt | injm --output dest.rs --dry-run
+cat src.txt | injm inject --output dest.rs --dry-run
 ```
 
 ## Supported Languages
@@ -181,5 +237,8 @@ MIT
 
 ## Acknowledgement
 
-- [clap-rs/clap](https://github.com/clap-rs/clap): A full featured, fast Command Line Argument Parser for Rust
+- [clap-rs/clap](https://github.com/clap-rs/clap): A full featured, fast Command Line Argument Parser for Rust.
+- [rust-lang/glob](https://github.com/rust-lang/glob): Support for matching file paths against Unix shell style patterns.
+- [serde-rs/serde](https://github.com/serde-rs/serde): Serialization framework for Rust.
 - [xberg-io/tree-sitter-language-pack](https://github.com/xberg-io/tree-sitter-language-pack): Comprehensive tree-sitter grammar compilation with polyglot bindings — Rust, Python, Node.js, Go, Java, Ruby, Elixir, PHP, C#, WASM, Dart, Kotlin-Android, Swift, Zig, and CLI. 306+ languages.
+- [zhiburt/tabled](https://github.com/zhiburt/tabled): An easy to use library for pretty print tables of Rust structs and enums.

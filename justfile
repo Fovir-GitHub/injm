@@ -37,3 +37,4 @@ toc:
 lint:
     # Run lint. 
     cargo clippy
+    cargo fmt --all -- --check

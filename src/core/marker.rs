@@ -15,6 +15,7 @@ impl MarkerBlock {
 pub(crate) fn extract_marker_blocks(
     comments: &[Comment],
     content: &str,
+    path: &str,
 ) -> Result<Vec<MarkerBlock>> {
     let mut marker_blocks: Vec<MarkerBlock> = Vec::new();
     let mut begin: Option<usize> = None; // Record the line of `injm begin`.
@@ -31,8 +32,8 @@ pub(crate) fn extract_marker_blocks(
         if comment.text.contains("injm begin") {
             if begin.is_some() {
                 return Err(format!(
-                    "found nested `injm begin` without `injm end` in line {}",
-                    comment.start_line
+                    "found nested `injm begin` without `injm end` in line {} of {}",
+                    comment.start_line, path,
                 )
                 .into());
             }
@@ -116,7 +117,7 @@ mod tests {
             make_comment("// injm begin", 1, 1),
             make_comment("// injm end", 5, 5),
         ];
-        let blocks = extract_marker_blocks(&comments, "").unwrap();
+        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
         assert_eq!(blocks.len(), 1);
         assert_eq!(blocks[0].begin_line, 1);
         assert_eq!(blocks[0].end_line, 5);
@@ -130,7 +131,7 @@ mod tests {
             make_comment("// injm begin", 6, 6),
             make_comment("// injm end", 9, 9),
         ];
-        let blocks = extract_marker_blocks(&comments, "").unwrap();
+        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
         assert_eq!(blocks.len(), 2);
         assert_eq!(blocks[0].begin_line, 1);
         assert_eq!(blocks[0].end_line, 3);
@@ -144,25 +145,25 @@ mod tests {
             make_comment("// injm begin", 1, 1),
             make_comment("// injm begin", 3, 3),
         ];
-        assert!(extract_marker_blocks(&comments, "").is_err());
+        assert!(extract_marker_blocks(&comments, "", "").is_err());
     }
 
     #[test]
     fn test_end_without_begin_returns_error() {
         let comments = vec![make_comment("// injm end", 1, 1)];
-        assert!(extract_marker_blocks(&comments, "").is_err());
+        assert!(extract_marker_blocks(&comments, "", "").is_err());
     }
 
     #[test]
     fn test_begin_without_end_returns_error() {
         let comments = vec![make_comment("// injm begin", 1, 1)];
-        assert!(extract_marker_blocks(&comments, "").is_err());
+        assert!(extract_marker_blocks(&comments, "", "").is_err());
     }
 
     #[test]
     fn test_empty_comments() {
         let comments = vec![];
-        let blocks = extract_marker_blocks(&comments, "").unwrap();
+        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
         assert_eq!(blocks.len(), 0);
     }
 
@@ -174,7 +175,7 @@ mod tests {
             make_comment("// another comment", 3, 3),
             make_comment("// injm end", 4, 4),
         ];
-        let blocks = extract_marker_blocks(&comments, "").unwrap();
+        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
         assert_eq!(blocks.len(), 1);
     }
 
@@ -218,7 +219,7 @@ mod tests {
             make_comment("// injm begin", 1, 1),
             make_comment("// injm end", 5, 5),
         ];
-        let blocks = extract_marker_blocks(&comments, "").unwrap();
+        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(blocks[0].input_ids.is_empty());
         assert_eq!(blocks[0].output_id, None);
@@ -230,7 +231,7 @@ mod tests {
             make_comment("// injm begin >first", 1, 1),
             make_comment("// injm end", 5, 5),
         ];
-        let blocks = extract_marker_blocks(&comments, "").unwrap();
+        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
         assert_eq!(blocks.len(), 1);
         assert_eq!(blocks[0].output_id, Some("first".to_string()));
     }
@@ -243,7 +244,7 @@ mod tests {
             make_comment("// injm begin", 5, 5),
             make_comment("// injm end", 7, 7),
         ];
-        let blocks = extract_marker_blocks(&comments, "").unwrap();
+        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
         assert_eq!(blocks.len(), 2);
         assert_eq!(blocks[0].output_id, Some("first".to_string()));
         assert_eq!(blocks[1].output_id, None);
@@ -259,7 +260,7 @@ println!(\"Hello injm\")
             make_comment("// injm begin <hello", 0, 0),
             make_comment("// injm end", 2, 2),
         ];
-        let blocks = extract_marker_blocks(&comments, content).unwrap();
+        let blocks = extract_marker_blocks(&comments, content, "").unwrap();
         assert_eq!(blocks.len(), 1);
         assert_eq!(blocks[0].input_ids, vec!["hello".to_string()]);
         assert_eq!(
@@ -280,7 +281,7 @@ println!(\"Hello injm\")
             make_comment("// injm begin <hello", 0, 0),
             make_comment("// injm end", 4, 4),
         ];
-        let blocks = extract_marker_blocks(&comments, content).unwrap();
+        let blocks = extract_marker_blocks(&comments, content, "").unwrap();
         assert_eq!(blocks.len(), 1);
         assert_eq!(blocks[0].input_ids, vec!["hello".to_string()]);
         assert_eq!(
@@ -302,7 +303,7 @@ println!(\"Hello\")
             make_comment("// injm begin >first", 0, 0),
             make_comment("// injm end", 2, 2),
         ];
-        let blocks = extract_marker_blocks(&comments, content).unwrap();
+        let blocks = extract_marker_blocks(&comments, content, "").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(blocks[0].input_ids.is_empty());
         assert_eq!(blocks[0].input_content, None);
@@ -318,7 +319,7 @@ old content
             make_comment("// injm begin <first <second", 0, 0),
             make_comment("// injm end", 2, 2),
         ];
-        let blocks = extract_marker_blocks(&comments, content).unwrap();
+        let blocks = extract_marker_blocks(&comments, content, "").unwrap();
         assert_eq!(blocks.len(), 1);
         assert_eq!(
             blocks[0].input_ids,
@@ -342,7 +343,7 @@ content two
             make_comment("// injm begin", 3, 3),
             make_comment("// injm end", 5, 5),
         ];
-        let blocks = extract_marker_blocks(&comments, content).unwrap();
+        let blocks = extract_marker_blocks(&comments, content, "").unwrap();
         assert_eq!(blocks.len(), 2);
         assert!(blocks[0].input_content.is_some());
         assert!(blocks[1].input_content.is_none());
