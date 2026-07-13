@@ -1,4 +1,4 @@
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::core::types::OutputID;
 
@@ -36,6 +36,15 @@ pub struct InjectArgs {
 
 #[derive(Args)]
 pub struct ListArgs {
-    #[arg(short,long,num_args=1..)]
+    #[arg(num_args=1..)]
     pub input: Vec<String>,
+
+    #[arg(long, short, default_value = "table")]
+    pub format: OutputFormat,
+}
+
+#[derive(Clone, ValueEnum)]
+pub enum OutputFormat {
+    Table,
+    Json,
 }
