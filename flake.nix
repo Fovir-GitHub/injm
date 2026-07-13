@@ -25,7 +25,7 @@
       {
         packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = "injm";
-          version = "0.4.0";
+          version = "0.5.0";
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
           preBuild = ''
