@@ -14,7 +14,7 @@ pub(crate) fn detect(path: &str) -> Result<&'static str> {
         return Ok(lang);
     }
 
-    Err("unsupported file type".into())
+    Err(format!("unsupported file type: {path}").into())
 }
 
 #[cfg(test)]
