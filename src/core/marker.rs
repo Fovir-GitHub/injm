@@ -1,13 +1,17 @@
 use std::mem;
 
-use crate::core::types::{Comment, MarkerBlock, Result};
+use crate::core::types::{BlockRole, Comment, MarkerBlock, Result};
 
 impl MarkerBlock {
     // input block matches output block.
     pub fn matches_output(&self, output: &MarkerBlock) -> bool {
-        match output.output_id.as_ref() {
-            Some(id) => self.input_ids.contains(id),
-            None => self.input_ids.is_empty(),
+        let BlockRole::Input { ids, .. } = &self.role else {
+            return false;
+        };
+
+        match &output.role {
+            BlockRole::Output { id: Some(id) } => ids.contains(id),
+            _ => ids.is_empty(),
         }
     }
 }
