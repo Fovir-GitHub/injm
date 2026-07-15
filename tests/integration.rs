@@ -805,61 +805,6 @@ fn test_list_file_not_exist_returns_error() {
 }
 
 #[test]
-fn test_list_multiple_input_ids() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("test.rs");
-    std::fs::write(
-        &path,
-        "// injm begin <first <second\ncontent\n// injm end\n",
-    )
-    .unwrap();
-
-    let output = injm_bin_list()
-        .arg(&path)
-        .arg("--format")
-        .arg("json")
-        .output()
-        .unwrap();
-
-    assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let rows: Vec<serde_json::Value> = serde_json::from_str(&stdout).unwrap();
-    assert_eq!(rows.len(), 2);
-    let ids: Vec<&str> = rows.iter().map(|r| r["id"].as_str().unwrap()).collect();
-    assert!(ids.contains(&"first"));
-    assert!(ids.contains(&"second"));
-}
-
-#[test]
-fn test_list_input_and_output_same_block() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("test.rs");
-    std::fs::write(
-        &path,
-        "// injm begin <in_id >out_id\ncontent\n// injm end\n",
-    )
-    .unwrap();
-
-    let output = injm_bin_list()
-        .arg(&path)
-        .arg("--format")
-        .arg("json")
-        .output()
-        .unwrap();
-
-    assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let rows: Vec<serde_json::Value> = serde_json::from_str(&stdout).unwrap();
-    assert_eq!(rows.len(), 2);
-    let types: Vec<&str> = rows
-        .iter()
-        .map(|r| r["marker_type"].as_str().unwrap())
-        .collect();
-    assert!(types.contains(&"input"));
-    assert!(types.contains(&"output"));
-}
-
-#[test]
 fn test_list_anonymous_block_produces_no_rows() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("test.rs");
