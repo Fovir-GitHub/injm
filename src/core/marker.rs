@@ -82,7 +82,7 @@ pub(crate) fn extract_marker_blocks(
     }
 }
 
-fn extract_id(comment: &str) -> Result<(Vec<String>, Option<String>)> {
+fn extract_role(comment: &str) -> Result<BlockRole> {
     let input_tokens: Vec<&str> = comment
         .split_whitespace()
         .filter(|t| t.starts_with('<'))
@@ -92,15 +92,27 @@ fn extract_id(comment: &str) -> Result<(Vec<String>, Option<String>)> {
         .filter(|t| t.starts_with('>'))
         .collect();
 
-    let input_ids = input_tokens.iter().map(|t| t[1..].to_string()).collect();
+    if input_tokens.is_empty() == output_tokens.is_empty() {
+        if input_tokens.is_empty() {
+            return Ok(BlockRole::Default);
+        } else {
+            return Err("found both input and output token".into());
+        }
+    }
 
-    let output_id = match output_tokens.len() {
-        0 => None,
-        1 => Some(output_tokens[0][1..].to_string()),
-        _ => return Err("multiple output markers detected".into()),
-    };
+    if !input_tokens.is_empty() {
+        return Ok(BlockRole::Input {
+            ids: input_tokens.iter().map(|t| t[1..].to_string()).collect(),
+            content: String::from(""),
+        });
+    }
 
-    Ok((input_ids, output_id))
+    match output_tokens.len() {
+        1 => Ok(BlockRole::Output {
+            id: Some(output_tokens[0][1..].to_string()),
+        }),
+        _ => Err("multiple output markers detected".into()),
+    }
 }
 
 #[cfg(test)]
