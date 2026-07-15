@@ -1,5 +1,3 @@
-use std::mem;
-
 use crate::core::types::{BlockRole, Comment, MarkerBlock, Result};
 
 impl MarkerBlock {
@@ -21,65 +19,67 @@ pub(crate) fn extract_marker_blocks(
     content: &str,
     path: &str,
 ) -> Result<Vec<MarkerBlock>> {
+    struct OpenBlock {
+        begin_line: usize,
+        role: BlockRole,
+    }
+
     let mut marker_blocks: Vec<MarkerBlock> = Vec::new();
-    let mut begin: Option<usize> = None; // Record the line of `injm begin`.
-    let mut input_ids: Vec<String> = Vec::new();
-    let mut output_id: Option<String> = None;
+    let lines: Vec<&str> = content.lines().collect();
+    let mut open: Option<OpenBlock> = None;
 
     for comment in comments {
-        // If comment contains `injm begin`, then check nested blocks,
-        // and set `begin` to the end line of this commment.
-        // If comment contains `injm end`, then check whether `begin` is `None`.
-        // If `begin` is `Some`, then push a new block and update assign `None` to begin.
-        // Otherwise, return an error for unclosed block.
-
         if comment.text.contains("injm begin") {
-            if begin.is_some() {
+            if open.is_some() {
                 return Err(format!(
                     "found nested `injm begin` without `injm end` in line {} of {}",
                     comment.start_line, path,
                 )
                 .into());
             }
-            begin = Some(comment.end_line);
-            (input_ids, output_id) = extract_id(&comment.text)?;
-        } else if comment.text.contains("injm end") {
-            match begin.take() {
-                Some(begin_line) => {
-                    let end_line = comment.start_line;
+            open = Some(OpenBlock {
+                begin_line: comment.end_line,
+                role: extract_role(&comment.text)?,
+            });
+            continue;
+        }
 
-                    // Extract input contents.
-                    let input_content = if input_ids.is_empty() {
-                        None
-                    } else {
-                        let lines: Vec<&str> = content.lines().collect();
-                        Some(lines[begin_line + 1..end_line].join("\n"))
-                    };
+        if comment.text.contains("injm end") {
+            let OpenBlock { begin_line, role } = open.take().ok_or_else(|| {
+                format!(
+                    "found `injm end` without `injm begin` in line {}",
+                    comment.start_line
+                )
+            })?;
 
-                    marker_blocks.push(MarkerBlock {
-                        begin_line,
-                        end_line,
-                        input_ids: mem::take(&mut input_ids),
-                        output_id: mem::take(&mut output_id),
-                        input_content,
-                    });
+            let role = match role {
+                BlockRole::Input { ids, .. } => {
+                    let input_content = lines[begin_line + 1..comment.start_line].join("\n");
+                    BlockRole::Input {
+                        ids,
+                        content: input_content,
+                    }
                 }
-                None => {
-                    return Err(format!(
-                        "found `injm end` without `injm begin` in line {}",
-                        comment.start_line
-                    )
-                    .into());
-                }
-            }
+                other => other,
+            };
+
+            marker_blocks.push(MarkerBlock {
+                begin_line,
+                end_line: comment.start_line,
+                role,
+            });
         }
     }
 
-    // Check unclosed `injm begin`.
-    match begin {
-        Some(b) => Err(format!("found `injm begin` without `injm end` at line {b}").into()),
-        None => Ok(marker_blocks),
+    if let Some(OpenBlock { begin_line, .. }) = open {
+        return Err(format!(
+            "found `injm begin` without `injm end` at line {}",
+            begin_line
+        )
+        .into());
     }
+
+    Ok(marker_blocks)
 }
 
 fn extract_role(comment: &str) -> Result<BlockRole> {
@@ -196,36 +196,33 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_id_no_markers() {
-        let (input, output) = extract_id("// injm begin").unwrap();
-        assert!(input.is_empty());
-        assert_eq!(output, None);
+    fn test_extract_role_default() {
+        let role = extract_role("// injm begin").unwrap();
+        assert!(matches!(role, BlockRole::Default));
     }
 
     #[test]
-    fn test_extract_id_with_output() {
-        let (input, output) = extract_id("// injm begin >first").unwrap();
-        assert!(input.is_empty());
-        assert_eq!(output, Some("first".to_string()));
+    fn test_extract_role_output() {
+        let role = extract_role("// injm begin >first").unwrap();
+        assert!(matches!(role, BlockRole::Output { id: Some(ref id) } if id == "first"));
     }
 
     #[test]
-    fn test_extract_id_with_input() {
-        let (input, output) = extract_id("// injm begin <first <second").unwrap();
-        assert_eq!(input, vec!["first".to_string(), "second".to_string()]);
-        assert_eq!(output, None);
+    fn test_extract_role_input() {
+        let role = extract_role("// injm begin <first <second").unwrap();
+        assert!(
+            matches!(role, BlockRole::Input { ref ids, .. } if ids == &vec!["first".to_string(), "second".to_string()])
+        );
     }
 
     #[test]
-    fn test_extract_id_with_both() {
-        let (input, output) = extract_id("// injm begin <first >second").unwrap();
-        assert_eq!(input, vec!["first".to_string()]);
-        assert_eq!(output, Some("second".to_string()));
+    fn test_extract_role_both_input_and_output_returns_error() {
+        assert!(extract_role("// injm begin <first >second").is_err());
     }
 
     #[test]
-    fn test_extract_id_multiple_outputs_returns_error() {
-        assert!(extract_id("// injm begin >first >second").is_err());
+    fn test_extract_role_multiple_outputs_returns_error() {
+        assert!(extract_role("// injm begin >first >second").is_err());
     }
 
     // extract_marker_blocks tests
@@ -237,8 +234,7 @@ mod tests {
         ];
         let blocks = extract_marker_blocks(&comments, "", "").unwrap();
         assert_eq!(blocks.len(), 1);
-        assert!(blocks[0].input_ids.is_empty());
-        assert_eq!(blocks[0].output_id, None);
+        assert!(matches!(blocks[0].role, BlockRole::Default));
     }
 
     #[test]
@@ -249,7 +245,10 @@ mod tests {
         ];
         let blocks = extract_marker_blocks(&comments, "", "").unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(blocks[0].output_id, Some("first".to_string()));
+        assert!(matches!(
+            blocks[0].role,
+            BlockRole::Output { id: Some(ref id) } if id == "first"
+        ));
     }
 
     #[test]
@@ -262,8 +261,11 @@ mod tests {
         ];
         let blocks = extract_marker_blocks(&comments, "", "").unwrap();
         assert_eq!(blocks.len(), 2);
-        assert_eq!(blocks[0].output_id, Some("first".to_string()));
-        assert_eq!(blocks[1].output_id, None);
+        assert!(matches!(
+            blocks[0].role,
+            BlockRole::Output { id: Some(ref id) } if id == "first"
+        ));
+        assert!(matches!(blocks[1].role, BlockRole::Default));
     }
 
     #[test]
@@ -278,11 +280,15 @@ println!(\"Hello injm\")
         ];
         let blocks = extract_marker_blocks(&comments, content, "").unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(blocks[0].input_ids, vec!["hello".to_string()]);
-        assert_eq!(
-            blocks[0].input_content,
-            Some("println!(\"Hello injm\")".to_string())
-        );
+        assert!(matches!(
+            blocks[0].role,
+            BlockRole::Input { ref ids, .. } if ids == &vec!["hello".to_string()]
+        ));
+        if let BlockRole::Input { content, .. } = &blocks[0].role {
+            assert_eq!(content, "println!(\"Hello injm\")");
+        } else {
+            panic!("expected Input role");
+        }
     }
 
     #[test]
@@ -299,14 +305,18 @@ println!(\"Hello injm\")
         ];
         let blocks = extract_marker_blocks(&comments, content, "").unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(blocks[0].input_ids, vec!["hello".to_string()]);
-        assert_eq!(
-            blocks[0].input_content,
-            Some(
+        assert!(matches!(
+            blocks[0].role,
+            BlockRole::Input { ref ids, .. } if ids == &vec!["hello".to_string()]
+        ));
+        if let BlockRole::Input { content, .. } = &blocks[0].role {
+            assert_eq!(
+                content,
                 "println!(\"Hello injm\")\nprintln!(\"Hello injm\")\nprintln!(\"Hello injm\")"
-                    .to_string()
-            )
-        );
+            );
+        } else {
+            panic!("expected Input role");
+        }
     }
 
     #[test]
@@ -321,8 +331,10 @@ println!(\"Hello\")
         ];
         let blocks = extract_marker_blocks(&comments, content, "").unwrap();
         assert_eq!(blocks.len(), 1);
-        assert!(blocks[0].input_ids.is_empty());
-        assert_eq!(blocks[0].input_content, None);
+        assert!(matches!(
+            blocks[0].role,
+            BlockRole::Output { id: Some(ref id) } if id == "first"
+        ));
     }
 
     #[test]
@@ -337,11 +349,16 @@ old content
         ];
         let blocks = extract_marker_blocks(&comments, content, "").unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(
-            blocks[0].input_ids,
-            vec!["first".to_string(), "second".to_string()]
-        );
-        assert_eq!(blocks[0].input_content, Some("old content".to_string()));
+        assert!(matches!(
+            blocks[0].role,
+            BlockRole::Input { ref ids, .. }
+                if ids == &vec!["first".to_string(), "second".to_string()]
+        ));
+        if let BlockRole::Input { content, .. } = &blocks[0].role {
+            assert_eq!(content, "old content");
+        } else {
+            panic!("expected Input role");
+        }
     }
 
     #[test]
@@ -361,7 +378,7 @@ content two
         ];
         let blocks = extract_marker_blocks(&comments, content, "").unwrap();
         assert_eq!(blocks.len(), 2);
-        assert!(blocks[0].input_content.is_some());
-        assert!(blocks[1].input_content.is_none());
+        assert!(matches!(blocks[0].role, BlockRole::Input { .. }));
+        assert!(matches!(blocks[1].role, BlockRole::Default));
     }
 }
