@@ -15,12 +15,13 @@ pub struct Comment {
 pub struct MarkerBlock {
     pub begin_line: usize,
     pub end_line: usize,
+    pub role: BlockRole,
+}
 
-    // Allow multiple input markers,
-    // while a block can have at most one output marker.
-    pub input_ids: Vec<String>,
-    pub input_content: Option<String>,
-    pub output_id: Option<String>,
+pub enum BlockRole {
+    Output { id: Option<String> },
+    Input { ids: Vec<String>, content: String },
+    Default,
 }
 
 #[derive(Serialize, Tabled)]
