@@ -1,6 +1,5 @@
 use clap::{Args, Parser, Subcommand};
 
-use crate::core::types::OutputID;
 use crate::output::OutputFormat;
 
 #[derive(Parser)]
@@ -32,7 +31,7 @@ pub struct InjectArgs {
     pub dry_run: bool,
 
     #[arg(long)]
-    pub id: Vec<OutputID>,
+    pub id: Vec<Option<String>>,
 }
 
 #[derive(Args)]

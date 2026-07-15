@@ -6,8 +6,6 @@ use tabled::Tabled;
 pub type Error = Box<dyn std::error::Error>;
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub type OutputID = Option<String>;
-
 pub struct Comment {
     pub text: String,
     pub start_line: usize,
@@ -22,7 +20,7 @@ pub struct MarkerBlock {
     // while a block can have at most one output marker.
     pub input_ids: Vec<String>,
     pub input_content: Option<String>,
-    pub output_id: OutputID,
+    pub output_id: Option<String>,
 }
 
 #[derive(Serialize, Tabled)]

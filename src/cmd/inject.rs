@@ -4,13 +4,13 @@ use std::io::{self, Read};
 use crate::core::checker::{check_duplicated_ids, check_missing_ids};
 use crate::core::inject::inject;
 use crate::core::parser::parse_patterns;
-use crate::core::types::{MarkerBlock, OutputID, Result};
+use crate::core::types::{MarkerBlock, Result};
 
 pub fn run(
     input: Vec<String>,
     output: Vec<String>,
     dry_run: bool,
-    ids: Vec<OutputID>,
+    ids: Vec<Option<String>>,
 ) -> Result<()> {
     let output_files = parse_patterns(&output)?;
 
@@ -44,7 +44,7 @@ fn read_stdin() -> Result<String> {
     io::stdin().read_to_string(&mut input)?;
     Ok(input)
 }
-fn stdin_blocks(ids: Vec<OutputID>) -> Result<Vec<MarkerBlock>> {
+fn stdin_blocks(ids: Vec<Option<String>>) -> Result<Vec<MarkerBlock>> {
     let stdin = read_stdin()?;
     let input_ids = ids.into_iter().flatten().collect();
     Ok(vec![MarkerBlock {
