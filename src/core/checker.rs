@@ -1,4 +1,4 @@
-use crate::core::types::{MarkerBlock, ParsedFile, Result};
+use crate::core::types::{BlockRole, MarkerBlock, ParsedFile, Result};
 use std::collections::HashSet;
 use std::fs;
 
@@ -15,17 +15,24 @@ pub(crate) fn check_file(path: &str) -> Result<()> {
 }
 
 pub fn check_missing_ids(output_files: &[ParsedFile], input_files: &[ParsedFile]) -> Result<()> {
-    let provided: HashSet<&String> = input_files
+    let input_blocks: HashSet<&String> = input_files
         .iter()
         .flat_map(|file| file.blocks.iter())
-        .flat_map(|block| block.input_ids.iter())
+        .filter_map(|b| match &b.role {
+            BlockRole::Input { ids, .. } => Some(ids.iter()),
+            _ => None,
+        })
+        .flatten()
         .collect();
 
     if let Some(id) = output_files
         .iter()
         .flat_map(|file| file.blocks.iter())
-        .filter_map(|block| block.output_id.as_ref())
-        .find(|id| !provided.contains(*id))
+        .filter_map(|b| match &b.role {
+            BlockRole::Output { id } => id.as_ref(),
+            _ => None,
+        })
+        .find(|&id| !input_blocks.contains(id))
     {
         return Err(format!("missing input id `{id}`").into());
     }
@@ -33,12 +40,16 @@ pub fn check_missing_ids(output_files: &[ParsedFile], input_files: &[ParsedFile]
     Ok(())
 }
 
-pub fn check_duplicated_ids(blocks: &[MarkerBlock]) -> Result<()> {
+pub fn check_duplicated_input_ids(blocks: &[MarkerBlock]) -> Result<()> {
     let mut seen = HashSet::new();
 
-    for id in blocks.iter().flat_map(|block| block.input_ids.iter()) {
-        if !seen.insert(id) {
-            return Err(format!("duplicated input id `{id}`").into());
+    for block in blocks {
+        if let BlockRole::Input { ids, .. } = &block.role {
+            for id in ids {
+                if !seen.insert(id) {
+                    return Err(format!("duplicated input id `{id}`").into());
+                }
+            }
         }
     }
 

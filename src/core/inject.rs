@@ -1,4 +1,4 @@
-use crate::core::types::{MarkerBlock, Result};
+use crate::core::types::{BlockRole, MarkerBlock, Result};
 
 pub fn inject(
     content: &str,
@@ -10,9 +10,11 @@ pub fn inject(
     // Use reversed iteration to avoid changes of line number.
     for block in output_blocks.iter().rev() {
         if let Some(input_block) = input_blocks.iter().find(|b| b.matches_output(block)) {
-            match input_block.input_content.as_ref() {
-                Some(content) => lines = inject_into_a_block(&lines, block, content),
-                None => return Err("empty input content".into()),
+            match &input_block.role {
+                BlockRole::Input { content, .. } => {
+                    lines = inject_into_a_block(&lines, block, content)
+                }
+                _ => return Err("empty input content".into()),
             }
         }
     }
@@ -43,15 +45,16 @@ mod tests {
     use std::vec;
 
     use super::*;
-    use crate::core::types::MarkerBlock;
+    use crate::core::types::{BlockRole, MarkerBlock};
 
     fn make_default_input_blocks(s: &str) -> Vec<MarkerBlock> {
         vec![MarkerBlock {
-            input_content: Some(s.to_string()),
             begin_line: 0,
             end_line: 0,
-            input_ids: vec![],
-            output_id: None,
+            role: BlockRole::Input {
+                ids: vec![],
+                content: s.to_string(),
+            },
         }]
     }
 
@@ -59,11 +62,9 @@ mod tests {
     fn test_inject_single_block() {
         let content = "fn main() {\n    // injm begin\n    old content\n    // injm end\n}\n";
         let blocks = vec![MarkerBlock {
-            input_ids: vec![],
-            output_id: None,
             begin_line: 1,
             end_line: 3,
-            input_content: None,
+            role: BlockRole::Default,
         }];
         let result = inject(
             content,
@@ -79,11 +80,9 @@ mod tests {
     fn test_inject_preserves_markers() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            input_ids: vec![],
-            output_id: None,
             begin_line: 0,
             end_line: 2,
-            input_content: None,
+            role: BlockRole::Default,
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new")).unwrap();
         assert!(result.contains("// injm begin"));
@@ -94,11 +93,9 @@ mod tests {
     fn test_inject_preserves_trailing_newline() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            input_ids: vec![],
-            output_id: None,
             begin_line: 0,
             end_line: 2,
-            input_content: None,
+            role: BlockRole::Default,
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new")).unwrap();
         assert!(result.ends_with('\n'));
@@ -108,11 +105,9 @@ mod tests {
     fn test_inject_no_trailing_newline() {
         let content = "// injm begin\nold\n// injm end";
         let blocks = vec![MarkerBlock {
-            input_ids: vec![],
-            output_id: None,
             begin_line: 0,
             end_line: 2,
-            input_content: None,
+            role: BlockRole::Default,
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new")).unwrap();
         assert!(!result.ends_with('\n'));
@@ -124,18 +119,14 @@ mod tests {
             "// injm begin\nold one\n// injm end\ncode\n// injm begin\nold two\n// injm end\n";
         let blocks = vec![
             MarkerBlock {
-                input_ids: vec![],
-                output_id: None,
                 begin_line: 0,
                 end_line: 2,
-                input_content: None,
+                role: BlockRole::Default,
             },
             MarkerBlock {
-                input_ids: vec![],
-                output_id: None,
                 begin_line: 4,
                 end_line: 6,
-                input_content: None,
+                role: BlockRole::Default,
             },
         ];
         let result = inject(content, &blocks, &make_default_input_blocks("new")).unwrap();
@@ -148,11 +139,9 @@ mod tests {
     fn test_inject_empty_block() {
         let content = "// injm begin\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            input_ids: vec![],
-            output_id: None,
             begin_line: 0,
             end_line: 1,
-            input_content: None,
+            role: BlockRole::Default,
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new content")).unwrap();
         assert!(result.contains("new content"));
@@ -162,11 +151,9 @@ mod tests {
     fn test_inject_multiline_stdin() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            input_ids: vec![],
-            output_id: None,
             begin_line: 0,
             end_line: 2,
-            input_content: None,
+            role: BlockRole::Default,
         }];
         let result = inject(
             content,
@@ -189,27 +176,28 @@ old second
 ";
         let blocks = vec![
             MarkerBlock {
-                input_ids: vec![],
-                output_id: Some("first".to_string()),
                 begin_line: 0,
                 end_line: 2,
-                input_content: None,
+                role: BlockRole::Output {
+                    id: Some("first".to_string()),
+                },
             },
             MarkerBlock {
-                input_ids: vec![],
-                output_id: Some("second".to_string()),
                 begin_line: 3,
                 end_line: 5,
-                input_content: None,
+                role: BlockRole::Output {
+                    id: Some("second".to_string()),
+                },
             },
         ];
 
         let input_blocks = vec![MarkerBlock {
             begin_line: 0,
             end_line: 0,
-            output_id: None,
-            input_ids: vec!["first".to_string()],
-            input_content: Some("new content".to_string()),
+            role: BlockRole::Input {
+                ids: vec!["first".to_string()],
+                content: "new content".to_string(),
+            },
         }];
 
         let result = inject(content, &blocks, &input_blocks).unwrap();
@@ -232,25 +220,23 @@ old second
 ";
         let blocks = vec![
             MarkerBlock {
-                input_ids: vec![],
-                output_id: Some("first".to_string()),
                 begin_line: 0,
                 end_line: 2,
-                input_content: None,
+                role: BlockRole::Output {
+                    id: Some("first".to_string()),
+                },
             },
             MarkerBlock {
-                input_ids: vec![],
-                output_id: Some("second".to_string()),
                 begin_line: 3,
                 end_line: 5,
-                input_content: None,
+                role: BlockRole::Output {
+                    id: Some("second".to_string()),
+                },
             },
             MarkerBlock {
-                input_ids: vec![],
-                output_id: None,
                 begin_line: 6,
                 end_line: 8,
-                input_content: None,
+                role: BlockRole::Default,
             },
         ];
         let result = inject(content, &blocks, &make_default_input_blocks("new content")).unwrap();
@@ -274,34 +260,35 @@ old third
 ";
         let blocks = vec![
             MarkerBlock {
-                input_ids: vec![],
-                output_id: Some("first".to_string()),
                 begin_line: 0,
                 end_line: 2,
-                input_content: None,
+                role: BlockRole::Output {
+                    id: Some("first".to_string()),
+                },
             },
             MarkerBlock {
-                input_ids: vec![],
-                output_id: Some("second".to_string()),
                 begin_line: 3,
                 end_line: 5,
-                input_content: None,
+                role: BlockRole::Output {
+                    id: Some("second".to_string()),
+                },
             },
             MarkerBlock {
-                input_ids: vec![],
-                output_id: Some("third".to_string()),
                 begin_line: 6,
                 end_line: 8,
-                input_content: None,
+                role: BlockRole::Output {
+                    id: Some("third".to_string()),
+                },
             },
         ];
 
         let input_blocks = vec![MarkerBlock {
             begin_line: 0,
             end_line: 0,
-            input_content: Some("new content".to_string()),
-            input_ids: vec!["first".to_string(), "third".to_string()],
-            output_id: None,
+            role: BlockRole::Input {
+                ids: vec!["first".to_string(), "third".to_string()],
+                content: "new content".to_string(),
+            },
         }];
 
         let result = inject(content, &blocks, &input_blocks).unwrap();
@@ -309,29 +296,5 @@ old third
         assert!(result.contains("old second"));
         assert!(!result.contains("old third"));
         assert_eq!(result.matches("new content").count(), 2);
-    }
-
-    #[test]
-    fn test_empty_input_content() {
-        let content = "fn main() {\n    // injm begin\n    old content\n    // injm end\n}\n";
-        let blocks = vec![MarkerBlock {
-            input_ids: vec![],
-            output_id: None,
-            begin_line: 1,
-            end_line: 3,
-            input_content: None,
-        }];
-        let result = inject(
-            content,
-            &blocks,
-            &[MarkerBlock {
-                input_content: None,
-                input_ids: vec![],
-                output_id: None,
-                begin_line: 0,
-                end_line: 0,
-            }],
-        );
-        assert!(result.is_err());
     }
 }
