@@ -1,4 +1,4 @@
-use crate::core::types::Result;
+use crate::types::Result;
 use std::fs;
 
 pub(crate) fn detect(path: &str) -> Result<&'static str> {

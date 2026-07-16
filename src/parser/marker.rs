@@ -1,4 +1,4 @@
-use crate::core::types::{BlockRole, MarkerBlock, Result};
+use crate::types::{BlockRole, MarkerBlock, Result};
 use tree_sitter_language_pack::{ProcessConfig, process};
 
 impl MarkerBlock {

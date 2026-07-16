@@ -1,5 +1,8 @@
-use crate::core;
-use crate::core::types::{ParsedFile, Result};
+use crate::{
+    checker::check_file,
+    parser::{detector::detect, marker::extract_marker_blocks},
+    types::{ParsedFile, Result},
+};
 use std::fs;
 
 pub fn parse_patterns(patterns: &[String]) -> Result<Vec<ParsedFile>> {
@@ -12,10 +15,10 @@ pub fn parse_patterns(patterns: &[String]) -> Result<Vec<ParsedFile>> {
 }
 
 fn parse_file(path: &str) -> Result<ParsedFile> {
-    core::checker::check_file(path)?;
-    let lang = core::detector::detect(path)?;
+    check_file(path)?;
+    let lang = detect(path)?;
     let content = fs::read_to_string(path)?;
-    let blocks = core::marker::extract_marker_blocks(&content, path, lang)?;
+    let blocks = extract_marker_blocks(&content, path, lang)?;
     Ok(ParsedFile {
         content,
         blocks,

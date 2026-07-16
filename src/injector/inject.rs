@@ -1,4 +1,4 @@
-use crate::core::types::{BlockRole, MarkerBlock, Result};
+use crate::types::{BlockRole, MarkerBlock, Result};
 
 pub fn inject(
     content: &str,
@@ -45,7 +45,7 @@ mod tests {
     use std::vec;
 
     use super::*;
-    use crate::core::types::{BlockRole, MarkerBlock};
+    use crate::types::{BlockRole, MarkerBlock};
 
     fn make_default_input_blocks(s: &str) -> Vec<MarkerBlock> {
         vec![MarkerBlock {

@@ -1,9 +1,12 @@
+mod checker;
 mod cli;
 mod cmd;
-mod core;
+mod injector;
 mod output;
+mod parser;
+mod types;
 
-use crate::core::types::Result;
+use crate::types::Result;
 use clap::Parser;
 
 fn main() -> Result<()> {
