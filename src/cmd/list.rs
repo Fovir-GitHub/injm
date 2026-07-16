@@ -1,14 +1,14 @@
+use crate::cli::ListArgs;
 use crate::core::parser::parse_patterns;
 use crate::core::types::{BlockRole, MarkerInfo, MarkerType, Result};
-use crate::output::OutputFormat;
 use crate::output::print;
 
-pub fn run(input: Vec<String>, format: OutputFormat) -> Result<()> {
+pub fn run(args: ListArgs) -> Result<()> {
     // If the input is empty, then fallback to current directory (`.`)
-    let input: Vec<String> = if input.is_empty() {
+    let input: Vec<String> = if args.input.is_empty() {
         vec![".".to_string()]
     } else {
-        input
+        args.input
     };
 
     // Get all input and output blocks.
@@ -45,7 +45,7 @@ pub fn run(input: Vec<String>, format: OutputFormat) -> Result<()> {
 
     // Display input and output blocks, including
     // Path, ID, input/output.
-    print(&rows, format)?;
+    print(&rows, args.format)?;
 
     Ok(())
 }
