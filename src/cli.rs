@@ -31,6 +31,9 @@ pub struct InjectArgs {
     pub dry_run: bool,
 
     #[arg(long)]
+    pub diff: bool,
+
+    #[arg(long)]
     pub id: Vec<Option<String>>,
 }
 

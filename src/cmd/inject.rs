@@ -5,6 +5,7 @@ use std::io::{self, Read};
 use crate::checker::{check_duplicated_input_ids, check_missing_ids};
 use crate::cli::InjectArgs;
 use crate::injector::inject;
+use crate::output::print_diff;
 use crate::parser::parse_patterns;
 use crate::types::{BlockRole, MarkerBlock, SourceSpan};
 
@@ -28,6 +29,11 @@ pub fn run(args: InjectArgs) -> Result<()> {
     for output_file in output_files {
         let replaced = inject(&output_file.content, &output_file.blocks, &input_blocks)?;
         if args.dry_run {
+            if args.diff {
+                print_diff(&output_file.path, &output_file.content, &replaced);
+                continue;
+            }
+
             if multiple_outputs {
                 println!("==== {} ====", output_file.path.display());
             }

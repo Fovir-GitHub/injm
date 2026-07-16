@@ -107,9 +107,9 @@ Synchronize directories.
 Improve preview and verification.
 
 - [ ] Add check mode
-- [ ] Improve error messages (Show line numbers of mismatched markers)
+- [x] Improve error messages (Show line numbers of mismatched markers)
 - [ ] Return non-zero exit code when synchronization is needed
-- [ ] Show unified diff output
+- [x] Show unified diff output
 
 Example:
 
