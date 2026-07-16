@@ -1,9 +1,9 @@
 use super::Result;
-use crate::checker::CheckerError;
 use crate::types::{BlockRole, MarkerBlock, ParsedFile};
+use crate::validator::ValidatorError;
 use std::collections::HashSet;
 
-pub fn check_missing_ids(output_files: &[ParsedFile], input_files: &[ParsedFile]) -> Result<()> {
+pub fn validate_missing_ids(output_files: &[ParsedFile], input_files: &[ParsedFile]) -> Result<()> {
     let input_blocks: HashSet<&String> = input_files
         .iter()
         .flat_map(|file| file.blocks.iter())
@@ -23,20 +23,20 @@ pub fn check_missing_ids(output_files: &[ParsedFile], input_files: &[ParsedFile]
         })
         .find(|&id| !input_blocks.contains(id))
     {
-        return Err(CheckerError::MissingInputID { id: id.to_owned() });
+        return Err(ValidatorError::MissingInputID { id: id.to_owned() });
     }
 
     Ok(())
 }
 
-pub fn check_duplicated_input_ids(blocks: &[MarkerBlock]) -> Result<()> {
+pub fn validate_duplicated_input_ids(blocks: &[MarkerBlock]) -> Result<()> {
     let mut seen = HashSet::new();
 
     for block in blocks {
         if let BlockRole::Input { ids, .. } = &block.role {
             for id in ids {
                 if !seen.insert(id) {
-                    return Err(CheckerError::DuplicatedInputID { id: id.to_owned() });
+                    return Err(ValidatorError::DuplicatedInputID { id: id.to_owned() });
                 }
             }
         }

@@ -1,10 +1,10 @@
-mod checker;
 mod cli;
 mod cmd;
 mod injector;
 mod output;
 mod parser;
 mod types;
+mod validator;
 
 use clap::Parser;
 

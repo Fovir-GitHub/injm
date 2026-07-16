@@ -10,7 +10,7 @@ pub(crate) enum ParserError {
     Process(#[from] tree_sitter_language_pack::Error),
 
     #[error(transparent)]
-    Checker(#[from] crate::checker::CheckerError),
+    Checker(#[from] crate::validator::ValidatorError),
 
     #[error(transparent)]
     Io(#[from] std::io::Error),

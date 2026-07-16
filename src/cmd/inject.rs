@@ -2,12 +2,12 @@ use anyhow::Result;
 use std::fs;
 use std::io::{self, Read};
 
-use crate::checker::{check_duplicated_input_ids, check_missing_ids};
 use crate::cli::InjectArgs;
 use crate::injector::inject;
 use crate::output::print_diff;
 use crate::parser::parse_patterns;
 use crate::types::{BlockRole, MarkerBlock, SourceSpan};
+use crate::validator::{validate_duplicated_input_ids, validate_missing_ids};
 
 pub fn run(args: InjectArgs) -> Result<()> {
     let output_files = parse_patterns(&args.output)?;
@@ -16,14 +16,14 @@ pub fn run(args: InjectArgs) -> Result<()> {
         stdin_blocks(args.id)?
     } else {
         let input_files = parse_patterns(&args.input)?;
-        check_missing_ids(&output_files, &input_files)?;
+        validate_missing_ids(&output_files, &input_files)?;
         input_files
             .into_iter()
             .flat_map(|file| file.blocks)
             .collect()
     };
 
-    check_duplicated_input_ids(&input_blocks)?;
+    validate_duplicated_input_ids(&input_blocks)?;
 
     let multiple_outputs = output_files.len() > 1;
     for output_file in output_files {

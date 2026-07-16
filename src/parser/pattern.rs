@@ -1,8 +1,8 @@
 use super::{ParserError, Result};
 use crate::{
-    checker::check_file,
     parser::{detector::detect, marker::extract_marker_blocks},
     types::ParsedFile,
+    validator::validate_file,
 };
 use std::{fs, path::Path};
 
@@ -16,7 +16,7 @@ pub fn parse_patterns(patterns: &[String]) -> Result<Vec<ParsedFile>> {
 }
 
 fn parse_file(path: &Path) -> Result<ParsedFile> {
-    check_file(path)?;
+    validate_file(path)?;
     let lang = detect(path)?;
     let content = fs::read_to_string(path)?;
     let blocks = extract_marker_blocks(&content, path, lang)?;
