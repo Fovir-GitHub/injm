@@ -24,7 +24,7 @@ pub struct InjectArgs {
     #[arg(short, long, num_args = 1..)]
     pub input: Vec<String>,
 
-    #[arg(short, long, num_args = 1..)]
+    #[arg(short, long, required = true, num_args = 1..)]
     pub output: Vec<String>,
 
     #[arg(long)]
