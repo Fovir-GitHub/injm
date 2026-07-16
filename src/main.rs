@@ -6,10 +6,9 @@ mod output;
 mod parser;
 mod types;
 
-use crate::types::Result;
 use clap::Parser;
 
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     let cli = cli::Cli::parse();
 
     match cli.command {

@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::fs;
 use std::io::{self, Read};
 
@@ -5,7 +6,7 @@ use crate::checker::{check_duplicated_input_ids, check_missing_ids};
 use crate::cli::InjectArgs;
 use crate::injector::inject;
 use crate::parser::parse_patterns;
-use crate::types::{BlockRole, MarkerBlock, Result};
+use crate::types::{BlockRole, MarkerBlock};
 
 pub fn run(args: InjectArgs) -> Result<()> {
     let output_files = parse_patterns(&args.output)?;

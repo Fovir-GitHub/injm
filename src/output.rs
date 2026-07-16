@@ -2,7 +2,7 @@ use clap::ValueEnum;
 use serde::Serialize;
 use tabled::{Table, Tabled};
 
-use crate::types::Result;
+use anyhow::Result;
 
 #[derive(Clone, ValueEnum)]
 pub enum OutputFormat {

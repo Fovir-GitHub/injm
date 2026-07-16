@@ -1,7 +1,8 @@
 use crate::cli::ListArgs;
 use crate::output::print;
 use crate::parser::parse_patterns;
-use crate::types::{BlockRole, MarkerInfo, MarkerType, Result};
+use crate::types::{BlockRole, MarkerInfo, MarkerType};
+use anyhow::Result;
 
 pub fn run(args: ListArgs) -> Result<()> {
     // If the input is empty, then fallback to current directory (`.`)
