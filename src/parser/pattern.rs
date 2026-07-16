@@ -4,7 +4,7 @@ use crate::{
     parser::{detector::detect, marker::extract_marker_blocks},
     types::ParsedFile,
 };
-use std::fs;
+use std::{fs, path::Path};
 
 pub fn parse_patterns(patterns: &[String]) -> Result<Vec<ParsedFile>> {
     let mut files = Vec::new();
@@ -15,7 +15,7 @@ pub fn parse_patterns(patterns: &[String]) -> Result<Vec<ParsedFile>> {
     Ok(files)
 }
 
-fn parse_file(path: &str) -> Result<ParsedFile> {
+fn parse_file(path: &Path) -> Result<ParsedFile> {
     check_file(path)?;
     let lang = detect(path)?;
     let content = fs::read_to_string(path)?;
@@ -23,7 +23,7 @@ fn parse_file(path: &str) -> Result<ParsedFile> {
     Ok(ParsedFile {
         content,
         blocks,
-        path: path.to_string(),
+        path: path.to_path_buf(),
     })
 }
 
@@ -45,7 +45,7 @@ fn parse_pattern(pattern: &str) -> Result<Vec<ParsedFile>> {
             continue;
         }
 
-        let parsed = parse_file(path.to_string_lossy().as_ref())?;
+        let parsed = parse_file(&path)?;
         result.push(parsed);
     }
 

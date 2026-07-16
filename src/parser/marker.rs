@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use super::comment::extract_comments;
 use super::{ParserError, Result};
 use crate::types::{BlockRole, MarkerBlock, SourceSpan};
@@ -18,7 +20,7 @@ impl MarkerBlock {
 
 pub(crate) fn extract_marker_blocks(
     content: &str,
-    path: &str,
+    path: &Path,
     lang: &str,
 ) -> Result<Vec<MarkerBlock>> {
     struct OpenBlock {
@@ -124,7 +126,7 @@ mod tests {
     #[test]
     fn test_single_block() {
         let content = "\n// injm begin\n\n\n\n// injm end\n";
-        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
+        let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert_eq!(
             blocks[0].span,
@@ -138,7 +140,7 @@ mod tests {
     #[test]
     fn test_multiple_blocks() {
         let content = "\n// injm begin\n\n// injm end\n\n\n// injm begin\n\n\n// injm end\n";
-        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
+        let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 2);
         assert_eq!(
             blocks[0].span,
@@ -159,31 +161,31 @@ mod tests {
     #[test]
     fn test_nested_begin_returns_error() {
         let content = "\n// injm begin\n\n// injm begin\n";
-        assert!(extract_marker_blocks(content, "", "rust").is_err());
+        assert!(extract_marker_blocks(content, Path::new(""), "rust").is_err());
     }
 
     #[test]
     fn test_end_without_begin_returns_error() {
         let content = "\n// injm end\n";
-        assert!(extract_marker_blocks(content, "", "rust").is_err());
+        assert!(extract_marker_blocks(content, Path::new(""), "rust").is_err());
     }
 
     #[test]
     fn test_begin_without_end_returns_error() {
         let content = "\n// injm begin\n";
-        assert!(extract_marker_blocks(content, "", "rust").is_err());
+        assert!(extract_marker_blocks(content, Path::new(""), "rust").is_err());
     }
 
     #[test]
     fn test_empty_comments() {
-        let blocks = extract_marker_blocks("fn main() {}", "", "rust").unwrap();
+        let blocks = extract_marker_blocks("fn main() {}", Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 0);
     }
 
     #[test]
     fn test_non_marker_comments_are_ignored() {
         let content = "\n// some comment\n// injm begin\n// another comment\n// injm end\n";
-        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
+        let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 1);
     }
 
@@ -220,7 +222,7 @@ mod tests {
     #[test]
     fn test_single_block_no_id() {
         let content = "\n// injm begin\n\n\n\n// injm end\n";
-        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
+        let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(blocks[0].role, BlockRole::Default));
     }
@@ -228,7 +230,7 @@ mod tests {
     #[test]
     fn test_single_block_with_output() {
         let content = "\n// injm begin >first\n\n\n\n// injm end\n";
-        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
+        let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(
             blocks[0].role,
@@ -239,7 +241,7 @@ mod tests {
     #[test]
     fn test_multiple_blocks_ids_dont_leak() {
         let content = "\n// injm begin >first\n\n// injm end\n\n\n// injm begin\n\n// injm end\n";
-        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
+        let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 2);
         assert!(matches!(
             blocks[0].role,
@@ -251,7 +253,7 @@ mod tests {
     #[test]
     fn test_block_with_input_content() {
         let content = "// injm begin <hello\nprintln!(\"Hello injm\")\n// injm end";
-        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
+        let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(
             blocks[0].role,
@@ -272,7 +274,7 @@ println!(\"Hello injm\")
 println!(\"Hello injm\")
 println!(\"Hello injm\")
 // injm end";
-        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
+        let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(
             blocks[0].role,
@@ -291,7 +293,7 @@ println!(\"Hello injm\")
     #[test]
     fn test_block_without_input_has_no_content() {
         let content = "// injm begin >first\nprintln!(\"Hello\")\n// injm end";
-        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
+        let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(
             blocks[0].role,
@@ -305,7 +307,7 @@ println!(\"Hello injm\")
 // injm begin <first <second
 old content
 // injm end";
-        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
+        let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(
             blocks[0].role,
@@ -328,7 +330,7 @@ content one
 // injm begin
 content two
 // injm end";
-        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
+        let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 2);
         assert!(matches!(blocks[0].role, BlockRole::Input { .. }));
         assert!(matches!(blocks[1].role, BlockRole::Default));

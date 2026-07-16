@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use thiserror::Error;
 
 pub(crate) type Result<T> = std::result::Result<T, ParserError>;
@@ -19,14 +21,14 @@ pub(crate) enum ParserError {
     #[error(transparent)]
     Pattern(#[from] glob::PatternError),
 
-    #[error("unsupported file type: {path}")]
-    UnsupportedFileType { path: String },
+    #[error("unsupported file type: {}",path.display())]
+    UnsupportedFileType { path: PathBuf },
 
-    #[error("found nested `injm begin` without `injm end` at line {line} of {path}")]
-    NestedMarker { line: usize, path: String },
+    #[error("found nested `injm begin` without `injm end` at line {line} of {}", path.display())]
+    NestedMarker { line: usize, path: PathBuf },
 
-    #[error("found `injm end` without `injm begin` at line {line} of {path}")]
-    UnclosedMarker { line: usize, path: String },
+    #[error("found `injm end` without `injm begin` at line {line} of {}", path.display())]
+    UnclosedMarker { line: usize, path: PathBuf },
 
     #[error("found both input and output ID: {comment}")]
     BothInputOutputMarker { comment: String },

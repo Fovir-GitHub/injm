@@ -56,7 +56,7 @@ pub fn run(args: ListArgs) -> Result<()> {
                 BlockRole::Input { ids, .. } => {
                     for id in ids {
                         rows.push(MarkerInfo {
-                            file: file.path.clone(),
+                            file: file.path.display().to_string(),
                             marker_type: MarkerType::Input,
                             id: id.clone(),
                             lines: block.span.display_lines(),
@@ -66,7 +66,7 @@ pub fn run(args: ListArgs) -> Result<()> {
                 BlockRole::Output { id } => {
                     if let Some(id) = id {
                         rows.push(MarkerInfo {
-                            file: file.path.clone(),
+                            file: file.path.display().to_string(),
                             marker_type: MarkerType::Output,
                             id: id.clone(),
                             lines: block.span.display_lines(),

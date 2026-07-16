@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 pub struct MarkerBlock {
     pub span: SourceSpan,
     pub role: BlockRole,
@@ -18,7 +20,7 @@ pub enum BlockRole {
 pub struct ParsedFile {
     pub content: String,
     pub blocks: Vec<MarkerBlock>,
-    pub path: String,
+    pub path: PathBuf,
 }
 
 impl SourceSpan {
