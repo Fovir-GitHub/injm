@@ -1,6 +1,6 @@
 use super::comment::extract_comments;
 use super::{ParserError, Result};
-use crate::types::{BlockRole, MarkerBlock};
+use crate::types::{BlockRole, MarkerBlock, SourceSpan};
 
 impl MarkerBlock {
     // input block matches output block.
@@ -53,9 +53,11 @@ pub(crate) fn extract_marker_blocks(
                     path: path.to_owned(),
                 })?;
 
+            let span = SourceSpan::new(begin_line, comment.start_line);
+
             let role = match role {
                 BlockRole::Input { ids, .. } => {
-                    let input_content = lines[begin_line + 1..comment.start_line].join("\n");
+                    let input_content = lines[span.content_lines()].join("\n");
                     BlockRole::Input {
                         ids,
                         content: input_content,
@@ -64,11 +66,7 @@ pub(crate) fn extract_marker_blocks(
                 other => other,
             };
 
-            marker_blocks.push(MarkerBlock {
-                begin_line,
-                end_line: comment.start_line,
-                role,
-            });
+            marker_blocks.push(MarkerBlock { span, role });
         }
     }
 
@@ -128,8 +126,13 @@ mod tests {
         let content = "\n// injm begin\n\n\n\n// injm end\n";
         let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(blocks[0].begin_line, 1);
-        assert_eq!(blocks[0].end_line, 5);
+        assert_eq!(
+            blocks[0].span,
+            SourceSpan {
+                begin_marker: 1,
+                end_marker: 5
+            }
+        );
     }
 
     #[test]
@@ -137,10 +140,20 @@ mod tests {
         let content = "\n// injm begin\n\n// injm end\n\n\n// injm begin\n\n\n// injm end\n";
         let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 2);
-        assert_eq!(blocks[0].begin_line, 1);
-        assert_eq!(blocks[0].end_line, 3);
-        assert_eq!(blocks[1].begin_line, 6);
-        assert_eq!(blocks[1].end_line, 9);
+        assert_eq!(
+            blocks[0].span,
+            SourceSpan {
+                begin_marker: 1,
+                end_marker: 3
+            }
+        );
+        assert_eq!(
+            blocks[1].span,
+            SourceSpan {
+                begin_marker: 6,
+                end_marker: 9
+            }
+        );
     }
 
     #[test]

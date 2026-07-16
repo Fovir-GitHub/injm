@@ -59,7 +59,7 @@ pub fn run(args: ListArgs) -> Result<()> {
                             file: file.path.clone(),
                             marker_type: MarkerType::Input,
                             id: id.clone(),
-                            lines: format!("{}-{}", block.begin_line + 1, block.end_line + 1),
+                            lines: block.span.display_lines(),
                         });
                     }
                 }
@@ -69,7 +69,7 @@ pub fn run(args: ListArgs) -> Result<()> {
                             file: file.path.clone(),
                             marker_type: MarkerType::Output,
                             id: id.clone(),
-                            lines: format!("{}-{}", block.begin_line + 1, block.end_line + 1),
+                            lines: block.span.display_lines(),
                         });
                     }
                 }

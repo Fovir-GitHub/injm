@@ -30,13 +30,13 @@ pub fn inject(
 
 fn inject_into_a_block<'a>(lines: &[&'a str], block: &MarkerBlock, stdin: &'a str) -> Vec<&'a str> {
     // Content to be replaced is in (begin_line, end_line).
-    let before = lines[..=block.begin_line].to_vec();
-    let after = lines[block.end_line..].to_vec();
+    let before = &lines[block.span.before_lines()];
+    let after = &lines[block.span.after_lines()];
 
     let mut injected = Vec::new();
-    injected.extend_from_slice(&before);
+    injected.extend_from_slice(before);
     injected.push(stdin);
-    injected.extend_from_slice(&after);
+    injected.extend_from_slice(after);
 
     injected
 }
@@ -46,12 +46,11 @@ mod tests {
     use std::vec;
 
     use super::*;
-    use crate::types::{BlockRole, MarkerBlock};
+    use crate::types::{BlockRole, MarkerBlock, SourceSpan};
 
     fn make_default_input_blocks(s: &str) -> Vec<MarkerBlock> {
         vec![MarkerBlock {
-            begin_line: 0,
-            end_line: 0,
+            span: SourceSpan::new(0, 0),
             role: BlockRole::Input {
                 ids: vec![],
                 content: s.to_string(),
@@ -63,8 +62,7 @@ mod tests {
     fn test_inject_single_block() {
         let content = "fn main() {\n    // injm begin\n    old content\n    // injm end\n}\n";
         let blocks = vec![MarkerBlock {
-            begin_line: 1,
-            end_line: 3,
+            span: SourceSpan::new(1, 3),
             role: BlockRole::Default,
         }];
         let result = inject(
@@ -81,8 +79,7 @@ mod tests {
     fn test_inject_preserves_markers() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            begin_line: 0,
-            end_line: 2,
+            span: SourceSpan::new(0, 2),
             role: BlockRole::Default,
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new")).unwrap();
@@ -94,8 +91,7 @@ mod tests {
     fn test_inject_preserves_trailing_newline() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            begin_line: 0,
-            end_line: 2,
+            span: SourceSpan::new(0, 2),
             role: BlockRole::Default,
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new")).unwrap();
@@ -106,8 +102,7 @@ mod tests {
     fn test_inject_no_trailing_newline() {
         let content = "// injm begin\nold\n// injm end";
         let blocks = vec![MarkerBlock {
-            begin_line: 0,
-            end_line: 2,
+            span: SourceSpan::new(0, 2),
             role: BlockRole::Default,
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new")).unwrap();
@@ -120,13 +115,11 @@ mod tests {
             "// injm begin\nold one\n// injm end\ncode\n// injm begin\nold two\n// injm end\n";
         let blocks = vec![
             MarkerBlock {
-                begin_line: 0,
-                end_line: 2,
+                span: SourceSpan::new(0, 2),
                 role: BlockRole::Default,
             },
             MarkerBlock {
-                begin_line: 4,
-                end_line: 6,
+                span: SourceSpan::new(4, 6),
                 role: BlockRole::Default,
             },
         ];
@@ -140,8 +133,7 @@ mod tests {
     fn test_inject_empty_block() {
         let content = "// injm begin\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            begin_line: 0,
-            end_line: 1,
+            span: SourceSpan::new(0, 1),
             role: BlockRole::Default,
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new content")).unwrap();
@@ -152,8 +144,7 @@ mod tests {
     fn test_inject_multiline_stdin() {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
-            begin_line: 0,
-            end_line: 2,
+            span: SourceSpan::new(0, 2),
             role: BlockRole::Default,
         }];
         let result = inject(
@@ -177,15 +168,13 @@ old second
 ";
         let blocks = vec![
             MarkerBlock {
-                begin_line: 0,
-                end_line: 2,
+                span: SourceSpan::new(0, 2),
                 role: BlockRole::Output {
                     id: Some("first".to_string()),
                 },
             },
             MarkerBlock {
-                begin_line: 3,
-                end_line: 5,
+                span: SourceSpan::new(3, 5),
                 role: BlockRole::Output {
                     id: Some("second".to_string()),
                 },
@@ -193,8 +182,7 @@ old second
         ];
 
         let input_blocks = vec![MarkerBlock {
-            begin_line: 0,
-            end_line: 0,
+            span: SourceSpan::new(0, 0),
             role: BlockRole::Input {
                 ids: vec!["first".to_string()],
                 content: "new content".to_string(),
@@ -221,22 +209,19 @@ old second
 ";
         let blocks = vec![
             MarkerBlock {
-                begin_line: 0,
-                end_line: 2,
+                span: SourceSpan::new(0, 2),
                 role: BlockRole::Output {
                     id: Some("first".to_string()),
                 },
             },
             MarkerBlock {
-                begin_line: 3,
-                end_line: 5,
+                span: SourceSpan::new(3, 5),
                 role: BlockRole::Output {
                     id: Some("second".to_string()),
                 },
             },
             MarkerBlock {
-                begin_line: 6,
-                end_line: 8,
+                span: SourceSpan::new(6, 8),
                 role: BlockRole::Default,
             },
         ];
@@ -261,22 +246,19 @@ old third
 ";
         let blocks = vec![
             MarkerBlock {
-                begin_line: 0,
-                end_line: 2,
+                span: SourceSpan::new(0, 2),
                 role: BlockRole::Output {
                     id: Some("first".to_string()),
                 },
             },
             MarkerBlock {
-                begin_line: 3,
-                end_line: 5,
+                span: SourceSpan::new(3, 5),
                 role: BlockRole::Output {
                     id: Some("second".to_string()),
                 },
             },
             MarkerBlock {
-                begin_line: 6,
-                end_line: 8,
+                span: SourceSpan::new(6, 8),
                 role: BlockRole::Output {
                     id: Some("third".to_string()),
                 },
@@ -284,8 +266,7 @@ old third
         ];
 
         let input_blocks = vec![MarkerBlock {
-            begin_line: 0,
-            end_line: 0,
+            span: SourceSpan::new(0, 0),
             role: BlockRole::Input {
                 ids: vec!["first".to_string(), "third".to_string()],
                 content: "new content".to_string(),

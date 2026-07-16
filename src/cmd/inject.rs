@@ -6,7 +6,7 @@ use crate::checker::{check_duplicated_input_ids, check_missing_ids};
 use crate::cli::InjectArgs;
 use crate::injector::inject;
 use crate::parser::parse_patterns;
-use crate::types::{BlockRole, MarkerBlock};
+use crate::types::{BlockRole, MarkerBlock, SourceSpan};
 
 pub fn run(args: InjectArgs) -> Result<()> {
     let output_files = parse_patterns(&args.output)?;
@@ -46,8 +46,7 @@ fn stdin_blocks(ids: Vec<Option<String>>) -> Result<Vec<MarkerBlock>> {
     let stdin = read_stdin()?;
     let input_ids = ids.into_iter().flatten().collect();
     Ok(vec![MarkerBlock {
-        begin_line: 0,
-        end_line: 0,
+        span: SourceSpan::new(0, 0),
         role: BlockRole::Input {
             ids: input_ids,
             content: stdin,
