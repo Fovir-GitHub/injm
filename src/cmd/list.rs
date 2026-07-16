@@ -1,8 +1,42 @@
 use crate::cli::ListArgs;
 use crate::output::print;
 use crate::parser::parse_patterns;
-use crate::types::{BlockRole, MarkerInfo, MarkerType};
+use crate::types::BlockRole;
 use anyhow::Result;
+use core::fmt;
+use serde::Serialize;
+use tabled::Tabled;
+
+#[derive(Serialize, Tabled)]
+pub struct MarkerInfo {
+    #[tabled(rename = "File")]
+    pub file: String,
+
+    #[tabled(rename = "ID")]
+    pub id: String,
+
+    #[tabled(rename = "Type")]
+    pub marker_type: MarkerType,
+
+    #[tabled(rename = "Lines")]
+    pub lines: String,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MarkerType {
+    Input,
+    Output,
+}
+
+impl fmt::Display for MarkerType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MarkerType::Input => write!(f, "input"),
+            MarkerType::Output => write!(f, "output"),
+        }
+    }
+}
 
 pub fn run(args: ListArgs) -> Result<()> {
     // If the input is empty, then fallback to current directory (`.`)
