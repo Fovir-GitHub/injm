@@ -1,5 +1,6 @@
+mod comment;
 mod detector;
 mod marker;
-mod parser;
+mod pattern;
 
-pub use parser::*;
+pub use pattern::*;
