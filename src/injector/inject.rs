@@ -1,4 +1,5 @@
-use crate::types::{BlockRole, MarkerBlock, Result};
+use super::{InjectorError, Result};
+use crate::types::{BlockRole, MarkerBlock};
 
 pub fn inject(
     content: &str,
@@ -14,7 +15,7 @@ pub fn inject(
                 BlockRole::Input { content, .. } => {
                     lines = inject_into_a_block(&lines, block, content)
                 }
-                _ => return Err("empty input content".into()),
+                _ => return Err(InjectorError::EmptyInputContent),
             }
         }
     }
