@@ -1,14 +1,49 @@
-use crate::cli::OutputFormat;
-use crate::core::parser::parse_patterns;
-use crate::core::types::{MarkerInfo, MarkerType, Result};
+use crate::cli::ListArgs;
 use crate::output::print;
+use crate::parser::parse_patterns;
+use crate::types::BlockRole;
+use anyhow::Result;
+use core::fmt;
+use serde::Serialize;
+use tabled::Tabled;
 
-pub fn run(input: Vec<String>, format: OutputFormat) -> Result<()> {
+#[derive(Serialize, Tabled)]
+pub struct MarkerInfo {
+    #[tabled(rename = "File")]
+    pub file: String,
+
+    #[tabled(rename = "ID")]
+    pub id: String,
+
+    #[tabled(rename = "Type")]
+    pub marker_type: MarkerType,
+
+    #[tabled(rename = "Lines")]
+    pub lines: String,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MarkerType {
+    Input,
+    Output,
+}
+
+impl fmt::Display for MarkerType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MarkerType::Input => write!(f, "input"),
+            MarkerType::Output => write!(f, "output"),
+        }
+    }
+}
+
+pub fn run(args: ListArgs) -> Result<()> {
     // If the input is empty, then fallback to current directory (`.`)
-    let input: Vec<String> = if input.is_empty() {
+    let input: Vec<String> = if args.input.is_empty() {
         vec![".".to_string()]
     } else {
-        input
+        args.input
     };
 
     // Get all input and output blocks.
@@ -17,29 +52,35 @@ pub fn run(input: Vec<String>, format: OutputFormat) -> Result<()> {
     let files = parse_patterns(&input)?;
     for file in &files {
         for block in &file.blocks {
-            for id in &block.input_ids {
-                rows.push(MarkerInfo {
-                    file: file.path.clone(),
-                    marker_type: MarkerType::Input,
-                    id: id.clone(),
-                    lines: format!("{}-{}", block.begin_line + 1, block.end_line + 1),
-                });
-            }
-
-            if let Some(id) = &block.output_id {
-                rows.push(MarkerInfo {
-                    file: file.path.clone(),
-                    marker_type: MarkerType::Output,
-                    id: id.clone(),
-                    lines: format!("{}-{}", block.begin_line + 1, block.end_line + 1),
-                });
+            match &block.role {
+                BlockRole::Input { ids, .. } => {
+                    for id in ids {
+                        rows.push(MarkerInfo {
+                            file: file.path.display().to_string(),
+                            marker_type: MarkerType::Input,
+                            id: id.clone(),
+                            lines: block.span.display_lines(),
+                        });
+                    }
+                }
+                BlockRole::Output { id } => {
+                    if let Some(id) = id {
+                        rows.push(MarkerInfo {
+                            file: file.path.display().to_string(),
+                            marker_type: MarkerType::Output,
+                            id: id.clone(),
+                            lines: block.span.display_lines(),
+                        });
+                    }
+                }
+                BlockRole::Default => {}
             }
         }
     }
 
     // Display input and output blocks, including
     // Path, ID, input/output.
-    print(&rows, format)?;
+    print(&rows, args.format)?;
 
     Ok(())
 }

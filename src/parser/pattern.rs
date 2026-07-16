@@ -1,6 +1,10 @@
-use crate::core;
-use crate::core::types::{ParsedFile, Result};
-use std::fs;
+use super::{ParserError, Result};
+use crate::{
+    checker::check_file,
+    parser::{detector::detect, marker::extract_marker_blocks},
+    types::ParsedFile,
+};
+use std::{fs, path::Path};
 
 pub fn parse_patterns(patterns: &[String]) -> Result<Vec<ParsedFile>> {
     let mut files = Vec::new();
@@ -11,16 +15,15 @@ pub fn parse_patterns(patterns: &[String]) -> Result<Vec<ParsedFile>> {
     Ok(files)
 }
 
-fn parse_file(path: &str) -> Result<ParsedFile> {
-    core::checker::check_file(path)?;
-    let lang = core::detector::detect(path)?;
+fn parse_file(path: &Path) -> Result<ParsedFile> {
+    check_file(path)?;
+    let lang = detect(path)?;
     let content = fs::read_to_string(path)?;
-    let comments = core::extractor::extract_comments(&content, lang)?;
-    let blocks = core::marker::extract_marker_blocks(&comments, &content, path)?;
+    let blocks = extract_marker_blocks(&content, path, lang)?;
     Ok(ParsedFile {
         content,
         blocks,
-        path: path.to_string(),
+        path: path.to_path_buf(),
     })
 }
 
@@ -42,12 +45,12 @@ fn parse_pattern(pattern: &str) -> Result<Vec<ParsedFile>> {
             continue;
         }
 
-        let parsed = parse_file(path.to_string_lossy().as_ref())?;
+        let parsed = parse_file(&path)?;
         result.push(parsed);
     }
 
     if result.is_empty() {
-        return Err(format!("no files matched pattern `{pattern}`").into());
+        return Err(ParserError::NoPatternMatch { pattern });
     }
 
     Ok(result)
