@@ -11,6 +11,7 @@ homepage = "https://github.com/Fovir-GitHub/injm"
 readme = "README.md"
 
 [dependencies]
+anyhow = "1.0.103"
 clap = { version = "4.6.1", features = ["derive"] }
 glob = "0.3.3"
 serde = { version = "1.0.228", features = ["derive"] }
