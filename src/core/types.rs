@@ -6,12 +6,6 @@ use tabled::Tabled;
 pub type Error = Box<dyn std::error::Error>;
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub struct Comment {
-    pub text: String,
-    pub start_line: usize,
-    pub end_line: usize,
-}
-
 pub struct MarkerBlock {
     pub begin_line: usize,
     pub end_line: usize,

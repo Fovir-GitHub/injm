@@ -1,4 +1,5 @@
-use crate::core::types::{BlockRole, Comment, MarkerBlock, Result};
+use crate::core::types::{BlockRole, MarkerBlock, Result};
+use tree_sitter_language_pack::{ProcessConfig, process};
 
 impl MarkerBlock {
     // input block matches output block.
@@ -14,10 +15,16 @@ impl MarkerBlock {
     }
 }
 
+struct Comment {
+    pub text: String,
+    pub start_line: usize,
+    pub end_line: usize,
+}
+
 pub(crate) fn extract_marker_blocks(
-    comments: &[Comment],
     content: &str,
     path: &str,
+    lang: &str,
 ) -> Result<Vec<MarkerBlock>> {
     struct OpenBlock {
         begin_line: usize,
@@ -27,6 +34,7 @@ pub(crate) fn extract_marker_blocks(
     let mut marker_blocks: Vec<MarkerBlock> = Vec::new();
     let lines: Vec<&str> = content.lines().collect();
     let mut open: Option<OpenBlock> = None;
+    let comments = extract_comments(content, lang)?;
 
     for comment in comments {
         if comment.text.contains("injm begin") {
@@ -115,25 +123,32 @@ fn extract_role(comment: &str) -> Result<BlockRole> {
     }
 }
 
+fn extract_comments(content: &str, lang: &str) -> Result<Vec<Comment>> {
+    let mut comments: Vec<Comment> = Vec::new();
+
+    // Query all comments.
+    let mut config = ProcessConfig::new(lang);
+    config.comments = true;
+    let result = process(content, &config)?;
+    for comment in result.comments {
+        comments.push(Comment {
+            text: comment.text.trim().to_string(),
+            start_line: comment.span.start_line,
+            end_line: comment.span.end_line,
+        });
+    }
+
+    Ok(comments)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn make_comment(text: &str, start_line: usize, end_line: usize) -> Comment {
-        Comment {
-            text: text.to_string(),
-            start_line,
-            end_line,
-        }
-    }
-
     #[test]
     fn test_single_block() {
-        let comments = vec![
-            make_comment("// injm begin", 1, 1),
-            make_comment("// injm end", 5, 5),
-        ];
-        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
+        let content = "\n// injm begin\n\n\n\n// injm end\n";
+        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert_eq!(blocks[0].begin_line, 1);
         assert_eq!(blocks[0].end_line, 5);
@@ -141,13 +156,8 @@ mod tests {
 
     #[test]
     fn test_multiple_blocks() {
-        let comments = vec![
-            make_comment("// injm begin", 1, 1),
-            make_comment("// injm end", 3, 3),
-            make_comment("// injm begin", 6, 6),
-            make_comment("// injm end", 9, 9),
-        ];
-        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
+        let content = "\n// injm begin\n\n// injm end\n\n\n// injm begin\n\n\n// injm end\n";
+        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 2);
         assert_eq!(blocks[0].begin_line, 1);
         assert_eq!(blocks[0].end_line, 3);
@@ -157,41 +167,32 @@ mod tests {
 
     #[test]
     fn test_nested_begin_returns_error() {
-        let comments = vec![
-            make_comment("// injm begin", 1, 1),
-            make_comment("// injm begin", 3, 3),
-        ];
-        assert!(extract_marker_blocks(&comments, "", "").is_err());
+        let content = "\n// injm begin\n\n// injm begin\n";
+        assert!(extract_marker_blocks(content, "", "rust").is_err());
     }
 
     #[test]
     fn test_end_without_begin_returns_error() {
-        let comments = vec![make_comment("// injm end", 1, 1)];
-        assert!(extract_marker_blocks(&comments, "", "").is_err());
+        let content = "\n// injm end\n";
+        assert!(extract_marker_blocks(content, "", "rust").is_err());
     }
 
     #[test]
     fn test_begin_without_end_returns_error() {
-        let comments = vec![make_comment("// injm begin", 1, 1)];
-        assert!(extract_marker_blocks(&comments, "", "").is_err());
+        let content = "\n// injm begin\n";
+        assert!(extract_marker_blocks(content, "", "rust").is_err());
     }
 
     #[test]
     fn test_empty_comments() {
-        let comments = vec![];
-        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
+        let blocks = extract_marker_blocks("fn main() {}", "", "rust").unwrap();
         assert_eq!(blocks.len(), 0);
     }
 
     #[test]
     fn test_non_marker_comments_are_ignored() {
-        let comments = vec![
-            make_comment("// some comment", 1, 1),
-            make_comment("// injm begin", 2, 2),
-            make_comment("// another comment", 3, 3),
-            make_comment("// injm end", 4, 4),
-        ];
-        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
+        let content = "\n// some comment\n// injm begin\n// another comment\n// injm end\n";
+        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 1);
     }
 
@@ -225,25 +226,18 @@ mod tests {
         assert!(extract_role("// injm begin >first >second").is_err());
     }
 
-    // extract_marker_blocks tests
     #[test]
     fn test_single_block_no_id() {
-        let comments = vec![
-            make_comment("// injm begin", 1, 1),
-            make_comment("// injm end", 5, 5),
-        ];
-        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
+        let content = "\n// injm begin\n\n\n\n// injm end\n";
+        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(blocks[0].role, BlockRole::Default));
     }
 
     #[test]
     fn test_single_block_with_output() {
-        let comments = vec![
-            make_comment("// injm begin >first", 1, 1),
-            make_comment("// injm end", 5, 5),
-        ];
-        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
+        let content = "\n// injm begin >first\n\n\n\n// injm end\n";
+        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(
             blocks[0].role,
@@ -253,13 +247,8 @@ mod tests {
 
     #[test]
     fn test_multiple_blocks_ids_dont_leak() {
-        let comments = vec![
-            make_comment("// injm begin >first", 1, 1),
-            make_comment("// injm end", 3, 3),
-            make_comment("// injm begin", 5, 5),
-            make_comment("// injm end", 7, 7),
-        ];
-        let blocks = extract_marker_blocks(&comments, "", "").unwrap();
+        let content = "\n// injm begin >first\n\n// injm end\n\n\n// injm begin\n\n// injm end\n";
+        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 2);
         assert!(matches!(
             blocks[0].role,
@@ -270,15 +259,8 @@ mod tests {
 
     #[test]
     fn test_block_with_input_content() {
-        let content = "\
-// injm begin <hello
-println!(\"Hello injm\")
-// injm end";
-        let comments = vec![
-            make_comment("// injm begin <hello", 0, 0),
-            make_comment("// injm end", 2, 2),
-        ];
-        let blocks = extract_marker_blocks(&comments, content, "").unwrap();
+        let content = "// injm begin <hello\nprintln!(\"Hello injm\")\n// injm end";
+        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(
             blocks[0].role,
@@ -299,11 +281,7 @@ println!(\"Hello injm\")
 println!(\"Hello injm\")
 println!(\"Hello injm\")
 // injm end";
-        let comments = vec![
-            make_comment("// injm begin <hello", 0, 0),
-            make_comment("// injm end", 4, 4),
-        ];
-        let blocks = extract_marker_blocks(&comments, content, "").unwrap();
+        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(
             blocks[0].role,
@@ -321,15 +299,8 @@ println!(\"Hello injm\")
 
     #[test]
     fn test_block_without_input_has_no_content() {
-        let content = "\
-// injm begin >first
-println!(\"Hello\")
-// injm end";
-        let comments = vec![
-            make_comment("// injm begin >first", 0, 0),
-            make_comment("// injm end", 2, 2),
-        ];
-        let blocks = extract_marker_blocks(&comments, content, "").unwrap();
+        let content = "// injm begin >first\nprintln!(\"Hello\")\n// injm end";
+        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(
             blocks[0].role,
@@ -343,11 +314,7 @@ println!(\"Hello\")
 // injm begin <first <second
 old content
 // injm end";
-        let comments = vec![
-            make_comment("// injm begin <first <second", 0, 0),
-            make_comment("// injm end", 2, 2),
-        ];
-        let blocks = extract_marker_blocks(&comments, content, "").unwrap();
+        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 1);
         assert!(matches!(
             blocks[0].role,
@@ -370,15 +337,116 @@ content one
 // injm begin
 content two
 // injm end";
-        let comments = vec![
-            make_comment("// injm begin <hello", 0, 0),
-            make_comment("// injm end", 2, 2),
-            make_comment("// injm begin", 3, 3),
-            make_comment("// injm end", 5, 5),
-        ];
-        let blocks = extract_marker_blocks(&comments, content, "").unwrap();
+        let blocks = extract_marker_blocks(content, "", "rust").unwrap();
         assert_eq!(blocks.len(), 2);
         assert!(matches!(blocks[0].role, BlockRole::Input { .. }));
         assert!(matches!(blocks[1].role, BlockRole::Default));
+    }
+
+    #[test]
+    fn test_extract_rust_comments() {
+        let content = r"
+fn main() {
+    // hello world
+    let x = 1;
+}
+";
+        let comments = extract_comments(content, "rust").unwrap();
+        assert!(comments.iter().any(|c| c.text.contains("hello world")));
+    }
+
+    #[test]
+    fn test_extract_multiple_comments() {
+        let content = r"
+// first comment
+fn main() {
+    // second comment
+}
+";
+        let comments = extract_comments(content, "rust").unwrap();
+        assert_eq!(comments.len(), 2);
+    }
+
+    #[test]
+    fn test_comment_line_numbers() {
+        let content = r"fn main() {
+    // hello
+}";
+        let comments = extract_comments(content, "rust").unwrap();
+        assert_eq!(comments.len(), 1);
+        assert_eq!(comments[0].start_line, 1);
+        assert_eq!(comments[0].end_line, 1);
+    }
+
+    #[test]
+    fn test_no_comments() {
+        let content = r"
+fn main() {
+    let x = 1;
+}
+";
+        let comments = extract_comments(content, "rust").unwrap();
+        assert_eq!(comments.len(), 0);
+    }
+
+    #[test]
+    fn test_extract_go_comments() {
+        let content = r"
+// first comment
+// second comment
+// third comment
+func main() {
+}
+";
+        let comments = extract_comments(content, "go").unwrap();
+        assert_eq!(comments.len(), 3);
+    }
+
+    #[test]
+    fn test_extract_block_comments() {
+        let content = r"
+/*
+ This is a
+ multiple
+ line comment
+ (aka block comment)
+ */
+int main(void) {}
+";
+        let comments = extract_comments(content, "c").unwrap();
+        assert_eq!(comments.len(), 1);
+    }
+
+    #[test]
+    fn test_extract_python_comments() {
+        let content = r"
+# hello world
+def main():
+    pass
+";
+        let comments = extract_comments(content, "python").unwrap();
+        assert!(comments.iter().any(|c| c.text.contains("hello world")));
+    }
+
+    #[test]
+    fn test_extract_latex_comments() {
+        let content = r"
+\section{injm}
+
+% hello tex
+";
+        let comments = extract_comments(content, "latex").unwrap();
+        assert!(comments.iter().any(|c| c.text.contains("hello tex")));
+    }
+
+    #[test]
+    fn test_string_is_not_comment() {
+        let content = r#"
+fn main() {
+    let x = "// this is not a comment";
+}
+"#;
+        let comments = extract_comments(content, "rust").unwrap();
+        assert_eq!(comments.len(), 0);
     }
 }
