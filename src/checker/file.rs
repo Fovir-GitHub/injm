@@ -1,13 +1,19 @@
-use crate::types::Result;
+use crate::checker::CheckerError;
+
+use super::Result;
 use std::fs;
 
 pub(crate) fn check_file(path: &str) -> Result<()> {
     if !fs::exists(path)? {
-        return Err("file does not exist".into());
+        return Err(CheckerError::FileNotExist {
+            path: path.to_owned(),
+        });
     }
 
     if is_binary_file(path)? {
-        return Err("binary file".into());
+        return Err(CheckerError::BinaryFile {
+            path: path.to_owned(),
+        });
     }
 
     Ok(())
