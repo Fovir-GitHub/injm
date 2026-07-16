@@ -1,5 +1,6 @@
 use super::comment::extract_comments;
-use crate::types::{BlockRole, MarkerBlock, Result};
+use super::{ParserError, Result};
+use crate::types::{BlockRole, MarkerBlock};
 
 impl MarkerBlock {
     // input block matches output block.
@@ -33,11 +34,10 @@ pub(crate) fn extract_marker_blocks(
     for comment in comments {
         if comment.text.contains("injm begin") {
             if open.is_some() {
-                return Err(format!(
-                    "found nested `injm begin` without `injm end` in line {} of {}",
-                    comment.start_line, path,
-                )
-                .into());
+                return Err(ParserError::NestedMarker {
+                    line: comment.start_line,
+                    path: path.to_owned(),
+                });
             }
             open = Some(OpenBlock {
                 begin_line: comment.end_line,
@@ -47,12 +47,11 @@ pub(crate) fn extract_marker_blocks(
         }
 
         if comment.text.contains("injm end") {
-            let OpenBlock { begin_line, role } = open.take().ok_or_else(|| {
-                format!(
-                    "found `injm end` without `injm begin` in line {}",
-                    comment.start_line
-                )
-            })?;
+            let OpenBlock { begin_line, role } =
+                open.take().ok_or_else(|| ParserError::UnclosedMarker {
+                    line: comment.start_line,
+                    path: path.to_owned(),
+                })?;
 
             let role = match role {
                 BlockRole::Input { ids, .. } => {
@@ -74,11 +73,10 @@ pub(crate) fn extract_marker_blocks(
     }
 
     if let Some(OpenBlock { begin_line, .. }) = open {
-        return Err(format!(
-            "found `injm begin` without `injm end` at line {}",
-            begin_line
-        )
-        .into());
+        return Err(ParserError::UnclosedMarker {
+            line: begin_line,
+            path: path.to_owned(),
+        });
     }
 
     Ok(marker_blocks)
@@ -98,7 +96,9 @@ fn extract_role(comment: &str) -> Result<BlockRole> {
         if input_tokens.is_empty() {
             return Ok(BlockRole::Default);
         } else {
-            return Err("found both input and output token".into());
+            return Err(ParserError::BothInputOutputMarker {
+                comment: comment.to_owned(),
+            });
         }
     }
 
@@ -113,7 +113,9 @@ fn extract_role(comment: &str) -> Result<BlockRole> {
         1 => Ok(BlockRole::Output {
             id: Some(output_tokens[0][1..].to_string()),
         }),
-        _ => Err("multiple output markers detected".into()),
+        _ => Err(ParserError::MultipleOutputMarker {
+            comment: comment.to_owned(),
+        }),
     }
 }
 

@@ -1,7 +1,8 @@
+use super::{ParserError, Result};
 use crate::{
     checker::check_file,
     parser::{detector::detect, marker::extract_marker_blocks},
-    types::{ParsedFile, Result},
+    types::ParsedFile,
 };
 use std::fs;
 
@@ -49,7 +50,7 @@ fn parse_pattern(pattern: &str) -> Result<Vec<ParsedFile>> {
     }
 
     if result.is_empty() {
-        return Err(format!("no files matched pattern `{pattern}`").into());
+        return Err(ParserError::NoPatternMatch { pattern });
     }
 
     Ok(result)

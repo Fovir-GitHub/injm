@@ -1,4 +1,4 @@
-use crate::types::Result;
+use super::{ParserError, Result};
 use std::fs;
 
 pub(crate) fn detect(path: &str) -> Result<&'static str> {
@@ -14,7 +14,9 @@ pub(crate) fn detect(path: &str) -> Result<&'static str> {
         return Ok(lang);
     }
 
-    Err(format!("unsupported file type: {path}").into())
+    Err(ParserError::UnsupportedFileType {
+        path: path.to_owned(),
+    })
 }
 
 #[cfg(test)]

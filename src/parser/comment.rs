@@ -1,4 +1,4 @@
-use crate::types::Result;
+use super::Result;
 use tree_sitter_language_pack::{ProcessConfig, process};
 
 pub(super) struct Comment {
