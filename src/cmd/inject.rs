@@ -24,9 +24,13 @@ pub fn run(args: InjectArgs) -> Result<()> {
 
     check_duplicated_input_ids(&input_blocks)?;
 
+    let multiple_outputs = output_files.len() > 1;
     for output_file in output_files {
         let replaced = inject(&output_file.content, &output_file.blocks, &input_blocks)?;
         if args.dry_run {
+            if multiple_outputs {
+                println!("==== {} ====", output_file.path.display());
+            }
             println!("{replaced}");
         } else {
             fs::write(output_file.path, replaced)?;
