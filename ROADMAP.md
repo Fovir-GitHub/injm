@@ -127,6 +127,7 @@ Improve project configuration.
 - [ ] Configure include/exclude patterns
 - [ ] Configure marker or marker prefix
 - [ ] Configure default source/output mappings
+- [ ] Integrate with `.gitignore`
 
 Example:
 
@@ -147,4 +148,81 @@ Then simply run:
 
 ```bash
 injm
+```
+
+## v0.8.0
+
+Improve marker region configuration.
+
+- [ ] Provide offset option (default is `0`)
+- [ ] Support trim space option (default is `false`)
+- [ ] Allow the user to specify minimum indentation (default is `None`)
+
+Example:
+
+**Offset Option**
+
+```tex
+% injm begin >id :offset=1
+\begin{minted}{rust}
+\end{minted}
+% injm end
+```
+
+After injection, original `\begin{}` and `\end{}` will not be replaced.
+
+**Trim Space Option**
+
+`src.rs`
+
+```rust
+// injm begin <id
+fn main() {
+    println!("Hello injm");
+}
+
+// injm end
+```
+
+`dest.rs`
+
+```rust
+// injm begin >id :trim=true
+// injm end
+```
+
+After injection, `dest.rs` becomes:
+
+```rust
+// injm begin >id :trim=true
+fn main() {
+    println!("Hello injm");
+}
+// injm end
+```
+
+**Minimum Indentation**
+
+```rust
+fn main() {
+    if true {
+        // injm begin <id
+        if true {
+            println!("Hello world");
+        }
+        // injm end
+    }
+}
+```
+
+`dest.rs`
+
+```rust
+fn main() {
+    // injm begin >id :indent=4
+    if true {
+        println!("Hello world");
+    }
+    // injm end
+}
 ```
