@@ -718,6 +718,108 @@ fn test_multiple_output_globs() {
 }
 
 #[test]
+fn test_inject_same_file_with_id() {
+    let mut f = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(f, "// injm begin <hello").unwrap();
+    writeln!(f, "input content").unwrap();
+    writeln!(f, "// injm end").unwrap();
+    writeln!(f, "// injm begin >hello").unwrap();
+    writeln!(f, "old output").unwrap();
+    writeln!(f, "// injm end").unwrap();
+
+    let status = injm_bin_inject()
+        .arg("--input")
+        .arg(f.path())
+        .arg("--output")
+        .arg(f.path())
+        .status()
+        .unwrap();
+
+    assert!(status.success());
+
+    let result = std::fs::read_to_string(f.path()).unwrap();
+    assert_eq!(result.matches("input content").count(), 2);
+    assert!(!result.contains("old output"));
+}
+
+#[test]
+fn test_inject_same_file_dry_run() {
+    let mut f = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(f, "// injm begin <hello").unwrap();
+    writeln!(f, "input content").unwrap();
+    writeln!(f, "// injm end").unwrap();
+    writeln!(f, "// injm begin >hello").unwrap();
+    writeln!(f, "old output").unwrap();
+    writeln!(f, "// injm end").unwrap();
+
+    let original = std::fs::read_to_string(f.path()).unwrap();
+
+    let status = injm_bin_inject()
+        .arg("--input")
+        .arg(f.path())
+        .arg("--output")
+        .arg(f.path())
+        .arg("--dry-run")
+        .status()
+        .unwrap();
+
+    assert!(status.success());
+
+    let after = std::fs::read_to_string(f.path()).unwrap();
+    assert_eq!(original, after);
+}
+
+#[test]
+fn test_inject_same_file_multiple_ids() {
+    let mut f = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(f, "// injm begin <first").unwrap();
+    writeln!(f, "first content").unwrap();
+    writeln!(f, "// injm end").unwrap();
+    writeln!(f, "// injm begin <second").unwrap();
+    writeln!(f, "second content").unwrap();
+    writeln!(f, "// injm end").unwrap();
+    writeln!(f, "// injm begin >first").unwrap();
+    writeln!(f, "old first").unwrap();
+    writeln!(f, "// injm end").unwrap();
+    writeln!(f, "// injm begin >second").unwrap();
+    writeln!(f, "old second").unwrap();
+    writeln!(f, "// injm end").unwrap();
+
+    let status = injm_bin_inject()
+        .arg("--input")
+        .arg(f.path())
+        .arg("--output")
+        .arg(f.path())
+        .status()
+        .unwrap();
+
+    assert!(status.success());
+
+    let result = std::fs::read_to_string(f.path()).unwrap();
+    assert_eq!(result.matches("first content").count(), 2);
+    assert_eq!(result.matches("second content").count(), 2);
+    assert!(!result.contains("old first"));
+    assert!(!result.contains("old second"));
+}
+
+#[test]
+fn test_inject_same_file_missing_input_id_returns_error() {
+    let mut f = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(f, "// injm begin >hello").unwrap();
+    writeln!(f, "// injm end").unwrap();
+
+    let status = injm_bin_inject()
+        .arg("--input")
+        .arg(f.path())
+        .arg("--output")
+        .arg(f.path())
+        .status()
+        .unwrap();
+
+    assert!(!status.success());
+}
+
+#[test]
 fn test_list_single_file() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("test.rs");
