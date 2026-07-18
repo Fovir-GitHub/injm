@@ -6,7 +6,7 @@ pub struct MarkerBlock {
     pub content: String,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SourceSpan {
     pub begin_marker: usize,
     pub end_marker: usize,
