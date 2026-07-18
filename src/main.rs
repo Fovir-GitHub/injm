@@ -1,3 +1,4 @@
+mod checker;
 mod cli;
 mod cmd;
 mod injector;
@@ -14,5 +15,6 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         cli::Commands::Inject(args) => cmd::inject::run(args),
         cli::Commands::List(args) => cmd::list::run(args),
+        cli::Commands::Check(args) => cmd::check::run(args),
     }
 }

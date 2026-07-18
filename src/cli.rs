@@ -17,6 +17,7 @@ pub struct Cli {
 pub enum Commands {
     Inject(InjectArgs),
     List(ListArgs),
+    Check(CheckArgs),
 }
 
 #[derive(Args)]
@@ -44,4 +45,16 @@ pub struct ListArgs {
 
     #[arg(long, short, default_value = "table")]
     pub format: OutputFormat,
+}
+
+#[derive(Args)]
+pub struct CheckArgs {
+    #[arg(short, long, required = true, num_args = 1..)]
+    pub input: Vec<String>,
+
+    #[arg(short, long, required = true, num_args = 1..)]
+    pub output: Vec<String>,
+
+    #[arg(long)]
+    pub diff: bool,
 }
