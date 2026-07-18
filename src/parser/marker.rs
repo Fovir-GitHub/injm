@@ -12,8 +12,14 @@ impl MarkerBlock {
         };
 
         match &output.role {
-            BlockRole::Output { id: Some(id) } => ids.contains(id),
-            _ => ids.is_empty(),
+            BlockRole::Output { id } => {
+                if let Some(id) = id {
+                    ids.contains(id)
+                } else {
+                    ids.is_empty()
+                }
+            }
+            _ => false,
         }
     }
 }
@@ -56,19 +62,18 @@ pub(crate) fn extract_marker_blocks(
                 })?;
 
             let span = SourceSpan::new(begin_line, comment.start_line);
+            let content = lines[span.content_lines()].join("\n");
 
             let role = match role {
-                BlockRole::Input { ids, .. } => {
-                    let input_content = lines[span.content_lines()].join("\n");
-                    BlockRole::Input {
-                        ids,
-                        content: input_content,
-                    }
-                }
+                BlockRole::Input { ids } => BlockRole::Input { ids },
                 other => other,
             };
 
-            marker_blocks.push(MarkerBlock { span, role });
+            marker_blocks.push(MarkerBlock {
+                span,
+                role,
+                content,
+            });
         }
     }
 
@@ -94,7 +99,7 @@ fn extract_role(comment: &str) -> Result<BlockRole> {
 
     if input_tokens.is_empty() == output_tokens.is_empty() {
         if input_tokens.is_empty() {
-            return Ok(BlockRole::Default);
+            return Ok(BlockRole::Output { id: None });
         } else {
             return Err(ParserError::BothInputOutputMarker {
                 comment: comment.to_owned(),
@@ -105,7 +110,6 @@ fn extract_role(comment: &str) -> Result<BlockRole> {
     if !input_tokens.is_empty() {
         return Ok(BlockRole::Input {
             ids: input_tokens.iter().map(|t| t[1..].to_string()).collect(),
-            content: String::from(""),
         });
     }
 
@@ -192,7 +196,7 @@ mod tests {
     #[test]
     fn test_extract_role_default() {
         let role = extract_role("// injm begin").unwrap();
-        assert!(matches!(role, BlockRole::Default));
+        assert!(matches!(role, BlockRole::Output { .. }));
     }
 
     #[test]
@@ -224,7 +228,7 @@ mod tests {
         let content = "\n// injm begin\n\n\n\n// injm end\n";
         let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 1);
-        assert!(matches!(blocks[0].role, BlockRole::Default));
+        assert!(matches!(blocks[0].role, BlockRole::Output { .. }));
     }
 
     #[test]
@@ -247,7 +251,7 @@ mod tests {
             blocks[0].role,
             BlockRole::Output { id: Some(ref id) } if id == "first"
         ));
-        assert!(matches!(blocks[1].role, BlockRole::Default));
+        assert!(matches!(blocks[1].role, BlockRole::Output { .. }));
     }
 
     #[test]
@@ -259,11 +263,8 @@ mod tests {
             blocks[0].role,
             BlockRole::Input { ref ids, .. } if ids == &vec!["hello".to_string()]
         ));
-        if let BlockRole::Input { content, .. } = &blocks[0].role {
-            assert_eq!(content, "println!(\"Hello injm\")");
-        } else {
-            panic!("expected Input role");
-        }
+
+        assert_eq!(blocks[0].content, "println!(\"Hello injm\")");
     }
 
     #[test]
@@ -280,14 +281,10 @@ println!(\"Hello injm\")
             blocks[0].role,
             BlockRole::Input { ref ids, .. } if ids == &vec!["hello".to_string()]
         ));
-        if let BlockRole::Input { content, .. } = &blocks[0].role {
-            assert_eq!(
-                content,
-                "println!(\"Hello injm\")\nprintln!(\"Hello injm\")\nprintln!(\"Hello injm\")"
-            );
-        } else {
-            panic!("expected Input role");
-        }
+        assert_eq!(
+            blocks[0].content,
+            "println!(\"Hello injm\")\nprintln!(\"Hello injm\")\nprintln!(\"Hello injm\")"
+        );
     }
 
     #[test]
@@ -314,11 +311,7 @@ old content
             BlockRole::Input { ref ids, .. }
                 if ids == &vec!["first".to_string(), "second".to_string()]
         ));
-        if let BlockRole::Input { content, .. } = &blocks[0].role {
-            assert_eq!(content, "old content");
-        } else {
-            panic!("expected Input role");
-        }
+        assert_eq!(blocks[0].content, "old content");
     }
 
     #[test]
@@ -333,6 +326,6 @@ content two
         let blocks = extract_marker_blocks(content, Path::new(""), "rust").unwrap();
         assert_eq!(blocks.len(), 2);
         assert!(matches!(blocks[0].role, BlockRole::Input { .. }));
-        assert!(matches!(blocks[1].role, BlockRole::Default));
+        assert!(matches!(blocks[1].role, BlockRole::Output { .. }));
     }
 }

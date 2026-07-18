@@ -1,5 +1,5 @@
 use super::{InjectorError, Result};
-use crate::types::{BlockRole, MarkerBlock};
+use crate::types::MarkerBlock;
 
 pub fn inject(
     content: &str,
@@ -11,12 +11,10 @@ pub fn inject(
     // Use reversed iteration to avoid changes of line number.
     for block in output_blocks.iter().rev() {
         if let Some(input_block) = input_blocks.iter().find(|b| b.matches_output(block)) {
-            match &input_block.role {
-                BlockRole::Input { content, .. } => {
-                    lines = inject_into_a_block(&lines, block, content)
-                }
-                _ => return Err(InjectorError::EmptyInputContent),
+            if input_block.content.is_empty() {
+                return Err(InjectorError::EmptyInputContent);
             }
+            lines = inject_into_a_block(&lines, block, &input_block.content);
         }
     }
 
@@ -51,10 +49,8 @@ mod tests {
     fn make_default_input_blocks(s: &str) -> Vec<MarkerBlock> {
         vec![MarkerBlock {
             span: SourceSpan::new(0, 0),
-            role: BlockRole::Input {
-                ids: vec![],
-                content: s.to_string(),
-            },
+            content: s.to_string(),
+            role: BlockRole::Input { ids: vec![] },
         }]
     }
 
@@ -63,7 +59,8 @@ mod tests {
         let content = "fn main() {\n    // injm begin\n    old content\n    // injm end\n}\n";
         let blocks = vec![MarkerBlock {
             span: SourceSpan::new(1, 3),
-            role: BlockRole::Default,
+            role: BlockRole::Output { id: None },
+            content: "".to_string(),
         }];
         let result = inject(
             content,
@@ -80,7 +77,8 @@ mod tests {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
             span: SourceSpan::new(0, 2),
-            role: BlockRole::Default,
+            role: BlockRole::Output { id: None },
+            content: "".to_string(),
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new")).unwrap();
         assert!(result.contains("// injm begin"));
@@ -92,7 +90,8 @@ mod tests {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
             span: SourceSpan::new(0, 2),
-            role: BlockRole::Default,
+            role: BlockRole::Output { id: None },
+            content: "".to_string(),
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new")).unwrap();
         assert!(result.ends_with('\n'));
@@ -103,7 +102,8 @@ mod tests {
         let content = "// injm begin\nold\n// injm end";
         let blocks = vec![MarkerBlock {
             span: SourceSpan::new(0, 2),
-            role: BlockRole::Default,
+            role: BlockRole::Output { id: None },
+            content: "".to_string(),
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new")).unwrap();
         assert!(!result.ends_with('\n'));
@@ -116,11 +116,13 @@ mod tests {
         let blocks = vec![
             MarkerBlock {
                 span: SourceSpan::new(0, 2),
-                role: BlockRole::Default,
+                role: BlockRole::Output { id: None },
+                content: "".to_string(),
             },
             MarkerBlock {
                 span: SourceSpan::new(4, 6),
-                role: BlockRole::Default,
+                role: BlockRole::Output { id: None },
+                content: "".to_string(),
             },
         ];
         let result = inject(content, &blocks, &make_default_input_blocks("new")).unwrap();
@@ -134,7 +136,8 @@ mod tests {
         let content = "// injm begin\n// injm end\n";
         let blocks = vec![MarkerBlock {
             span: SourceSpan::new(0, 1),
-            role: BlockRole::Default,
+            role: BlockRole::Output { id: None },
+            content: "".to_string(),
         }];
         let result = inject(content, &blocks, &make_default_input_blocks("new content")).unwrap();
         assert!(result.contains("new content"));
@@ -145,7 +148,8 @@ mod tests {
         let content = "// injm begin\nold\n// injm end\n";
         let blocks = vec![MarkerBlock {
             span: SourceSpan::new(0, 2),
-            role: BlockRole::Default,
+            role: BlockRole::Output { id: None },
+            content: "".to_string(),
         }];
         let result = inject(
             content,
@@ -172,12 +176,14 @@ old second
                 role: BlockRole::Output {
                     id: Some("first".to_string()),
                 },
+                content: "".to_string(),
             },
             MarkerBlock {
                 span: SourceSpan::new(3, 5),
                 role: BlockRole::Output {
                     id: Some("second".to_string()),
                 },
+                content: "".to_string(),
             },
         ];
 
@@ -185,8 +191,8 @@ old second
             span: SourceSpan::new(0, 0),
             role: BlockRole::Input {
                 ids: vec!["first".to_string()],
-                content: "new content".to_string(),
             },
+            content: "new content".to_string(),
         }];
 
         let result = inject(content, &blocks, &input_blocks).unwrap();
@@ -213,16 +219,19 @@ old second
                 role: BlockRole::Output {
                     id: Some("first".to_string()),
                 },
+                content: "".to_string(),
             },
             MarkerBlock {
                 span: SourceSpan::new(3, 5),
                 role: BlockRole::Output {
                     id: Some("second".to_string()),
                 },
+                content: "".to_string(),
             },
             MarkerBlock {
                 span: SourceSpan::new(6, 8),
-                role: BlockRole::Default,
+                role: BlockRole::Output { id: None },
+                content: "".to_string(),
             },
         ];
         let result = inject(content, &blocks, &make_default_input_blocks("new content")).unwrap();
@@ -250,18 +259,21 @@ old third
                 role: BlockRole::Output {
                     id: Some("first".to_string()),
                 },
+                content: "".to_string(),
             },
             MarkerBlock {
                 span: SourceSpan::new(3, 5),
                 role: BlockRole::Output {
                     id: Some("second".to_string()),
                 },
+                content: "".to_string(),
             },
             MarkerBlock {
                 span: SourceSpan::new(6, 8),
                 role: BlockRole::Output {
                     id: Some("third".to_string()),
                 },
+                content: "".to_string(),
             },
         ];
 
@@ -269,8 +281,8 @@ old third
             span: SourceSpan::new(0, 0),
             role: BlockRole::Input {
                 ids: vec!["first".to_string(), "third".to_string()],
-                content: "new content".to_string(),
             },
+            content: "new content".to_string(),
         }];
 
         let result = inject(content, &blocks, &input_blocks).unwrap();

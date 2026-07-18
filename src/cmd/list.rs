@@ -73,7 +73,6 @@ pub fn run(args: ListArgs) -> Result<()> {
                         });
                     }
                 }
-                BlockRole::Default => {}
             }
         }
     }

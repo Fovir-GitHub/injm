@@ -57,9 +57,7 @@ fn stdin_blocks(ids: Vec<Option<String>>) -> Result<Vec<MarkerBlock>> {
     let input_ids = ids.into_iter().flatten().collect();
     Ok(vec![MarkerBlock {
         span: SourceSpan::new(0, 0),
-        role: BlockRole::Input {
-            ids: input_ids,
-            content: stdin,
-        },
+        role: BlockRole::Input { ids: input_ids },
+        content: stdin,
     }])
 }
