@@ -26,13 +26,6 @@ fn test_basic_injection() {
     writeln!(f, "    // injm end").unwrap();
     writeln!(f, "}}").unwrap();
 
-    let _output = injm_bin_inject()
-        .arg("--output")
-        .arg(f.path())
-        .stdin(std::process::Stdio::piped())
-        .output()
-        .unwrap();
-
     let mut child = injm_bin_inject()
         .arg("--output")
         .arg(f.path())
