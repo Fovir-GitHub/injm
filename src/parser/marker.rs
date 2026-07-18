@@ -56,7 +56,7 @@ pub(crate) fn extract_marker_blocks(
 
         if comment.text.contains("injm end") {
             let OpenBlock { begin_line, role } =
-                open.take().ok_or_else(|| ParserError::UnclosedMarker {
+                open.take().ok_or_else(|| ParserError::EndWithoutBegin {
                     line: comment.start_line,
                     path: path.to_owned(),
                 })?;
@@ -78,7 +78,7 @@ pub(crate) fn extract_marker_blocks(
     }
 
     if let Some(OpenBlock { begin_line, .. }) = open {
-        return Err(ParserError::UnclosedMarker {
+        return Err(ParserError::BeginWithoutEnd {
             line: begin_line,
             path: path.to_owned(),
         });
