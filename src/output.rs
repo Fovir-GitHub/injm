@@ -40,3 +40,16 @@ pub fn print_diff(path: &Path, original: &str, replaced: &str) {
             .header(&old_path, &new_path)
     );
 }
+
+pub fn print_block_diff(path: &Path, lines: &str, id: &str, actual: &str, expected: &str) {
+    let old_path = format!("{}:{}:{}:actual", path.display(), lines, id,);
+
+    let new_path = format!("{}:{}:{}:expected", path.display(), lines, id,);
+
+    print!(
+        "{}",
+        TextDiff::from_lines(actual, expected)
+            .unified_diff()
+            .header(&old_path, &new_path)
+    );
+}
