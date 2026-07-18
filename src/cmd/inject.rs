@@ -3,6 +3,7 @@ use std::fs;
 use std::io::{self, Read};
 
 use crate::cli::InjectArgs;
+use crate::cmd::utils::into_blocks;
 use crate::injector::inject;
 use crate::output::print_diff;
 use crate::parser::parse_patterns;
@@ -17,10 +18,7 @@ pub fn run(args: InjectArgs) -> Result<()> {
     } else {
         let input_files = parse_patterns(&args.input)?;
         validate_missing_ids(&output_files, &input_files)?;
-        input_files
-            .into_iter()
-            .flat_map(|file| file.blocks)
-            .collect()
+        into_blocks(input_files)
     };
 
     validate_duplicated_input_ids(&input_blocks)?;
