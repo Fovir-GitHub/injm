@@ -7,10 +7,10 @@ fn injm_bin_inject() -> Command {
     cmd
 }
 
-fn inject_stdin(path: &std::path::Path, input: &[u8]) -> std::process::ExitStatus {
+fn inject_stdin(pattern: &str, input: &[u8]) -> std::process::ExitStatus {
     let mut child = injm_bin_inject()
         .arg("--output")
-        .arg(path)
+        .arg(pattern)
         .stdin(std::process::Stdio::piped())
         .spawn()
         .unwrap();
@@ -347,7 +347,7 @@ fn test_unclosed_marker_returns_error() {
     writeln!(f, "    // injm begin").unwrap();
     writeln!(f, "}}").unwrap();
 
-    let status = inject_stdin(f.path(), b"x");
+    let status = inject_stdin(f.path().to_str().unwrap(), b"x");
     assert!(!status.success());
 }
 
@@ -374,8 +374,8 @@ fn test_reinjection_replaces_content() {
     writeln!(f, "// injm begin").unwrap();
     writeln!(f, "// injm end").unwrap();
 
-    assert!(inject_stdin(f.path(), b"first content").success());
-    assert!(inject_stdin(f.path(), b"second content").success());
+    assert!(inject_stdin(f.path().to_str().unwrap(), b"first content").success());
+    assert!(inject_stdin(f.path().to_str().unwrap(), b"second content").success());
 
     let result = std::fs::read_to_string(f.path()).unwrap();
     assert!(result.contains("second content"));
@@ -393,18 +393,12 @@ fn test_glob_multiple_output_files() {
         std::fs::write(&path, "// injm begin\n// injm end\n").unwrap();
     }
 
-    let status = injm_bin_inject()
-        .arg("--output")
-        .arg(dir.path().join("*.rs"))
-        .stdin(std::process::Stdio::piped())
-        .status()
-        .unwrap();
-
+    let status = inject_stdin(dir.path().join("*.rs").to_str().unwrap(), b"new content");
     assert!(status.success());
 
     for name in ["a.rs", "b.rs"] {
         let result = std::fs::read_to_string(dir.path().join(name)).unwrap();
-        assert!(result.contains("// injm begin"));
+        assert!(result.contains("new content"));
     }
 }
 
@@ -516,14 +510,14 @@ fn test_recursive_glob() {
     )
     .unwrap();
 
-    let status = injm_bin_inject()
-        .arg("--output")
-        .arg(dir.path().join("**/*.rs"))
-        .stdin(std::process::Stdio::piped())
-        .status()
-        .unwrap();
+    let status = inject_stdin(dir.path().join("**/*.rs").to_str().unwrap(), b"new content");
 
     assert!(status.success());
+
+    for name in ["a.rs", "src/c.rs"] {
+        let result = std::fs::read_to_string(dir.path().join(name)).unwrap();
+        assert!(result.contains("new content"));
+    }
 }
 
 #[test]
