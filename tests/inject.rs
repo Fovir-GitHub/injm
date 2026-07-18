@@ -799,3 +799,13 @@ fn test_inject_same_file_missing_input_id_returns_error() {
 
     assert!(!status.success());
 }
+
+#[test]
+fn test_empty_stdin_error() {
+    let mut f = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(f, "// injm begin").unwrap();
+    writeln!(f, "// injm end").unwrap();
+
+    let status = inject_stdin(f.path().to_str().unwrap(), b"");
+    assert!(!status.success());
+}
