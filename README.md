@@ -17,7 +17,7 @@ A CLI tool that injects content into marked regions in source files.
   - [Multiple Files and Globs](#multiple-files-and-globs)
   - [List Markers](#list-markers)
   - [Dry Run](#dry-run)
-- [Check](#check)
+  - [Check](#check)
 - [Supported Languages](#supported-languages)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -222,7 +222,7 @@ To see a unified diff of what would change instead of the full file, add `--diff
 cat src.txt | injm inject --output dest.rs --dry-run --diff
 ```
 
-## Check
+### Check
 
 Verify that all output blocks (`>id`) contain the same content as their matching input blocks (`<id`):
 
