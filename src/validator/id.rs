@@ -29,15 +29,19 @@ pub fn validate_missing_ids(output_files: &[ParsedFile], input_files: &[ParsedFi
     Ok(())
 }
 
-pub fn validate_duplicated_input_ids(blocks: &[MarkerBlock]) -> Result<()> {
-    let mut seen = HashSet::new();
+pub fn validate_duplicated_input_ids<'a>(
+    blocks: impl IntoIterator<Item = &'a MarkerBlock>,
+) -> Result<()> {
+    let mut seen: HashSet<&'a str> = HashSet::new();
 
     for block in blocks {
-        if let BlockRole::Input { ids, .. } = &block.role {
-            for id in ids {
-                if !seen.insert(id) {
-                    return Err(ValidatorError::DuplicatedInputID { id: id.to_owned() });
-                }
+        let BlockRole::Input { ids, .. } = &block.role else {
+            continue;
+        };
+
+        for id in ids {
+            if !seen.insert(id) {
+                return Err(ValidatorError::DuplicatedInputID { id: id.to_owned() });
             }
         }
     }
