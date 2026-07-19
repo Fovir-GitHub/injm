@@ -42,6 +42,7 @@
             just
             markdown-toc
             pre-commit
+            prettier
             rust-analyzer
             rustc
             rustfmt
