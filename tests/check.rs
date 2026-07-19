@@ -48,9 +48,8 @@ println!("hello");
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .success()
@@ -80,9 +79,8 @@ println!("actual");
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .failure()
@@ -119,9 +117,8 @@ different default content
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .success()
@@ -151,9 +148,8 @@ default content without an input
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .success()
@@ -183,9 +179,8 @@ content
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .failure()
@@ -225,10 +220,8 @@ first definition
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input_one)
         .arg(&input_two)
-        .arg("--output")
         .arg(&output)
         .assert()
         .failure()
@@ -258,9 +251,8 @@ content
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .failure()
@@ -296,9 +288,8 @@ shared content
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .success()
@@ -336,9 +327,8 @@ actual second
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .failure()
@@ -386,9 +376,7 @@ old content two
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&output_one)
         .arg(&output_two)
         .assert()
@@ -425,9 +413,8 @@ println!("hello");
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .failure()
@@ -462,9 +449,8 @@ second line
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .failure()
@@ -504,9 +490,8 @@ fn generated() {
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .success()
@@ -540,9 +525,8 @@ shared content
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .success()
@@ -576,9 +560,8 @@ expected
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .success()
@@ -608,9 +591,8 @@ expected
     );
 
     injm()
-        .args(["check", "--input"])
+        .args(["check"])
         .arg(&input)
-        .args(["--output"])
         .arg(&output)
         .assert()
         .success()
@@ -644,9 +626,7 @@ expected
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input_directory)
-        .arg("--output")
         .arg(&output_directory)
         .assert()
         .success()
@@ -670,9 +650,7 @@ content
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&missing_pattern)
-        .arg("--output")
         .arg(&output)
         .assert()
         .failure()
@@ -696,9 +674,7 @@ content
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&missing_pattern)
         .assert()
         .failure()
@@ -706,39 +682,14 @@ content
 }
 
 #[test]
-fn check_requires_input_argument() {
-    let temp = TempDir::new().unwrap();
-
-    let output = write_file(temp.path(), "output.rs", "fn main() {}\n");
-
+fn check_requires_argument() {
     injm()
         .arg("check")
-        .arg("--output")
-        .arg(&output)
         .assert()
         .failure()
-        .stderr(
-            predicate::str::contains("required arguments were not provided")
-                .and(predicate::str::contains("--input")),
-        );
-}
-
-#[test]
-fn check_requires_output_argument() {
-    let temp = TempDir::new().unwrap();
-
-    let input = write_file(temp.path(), "input.rs", "fn main() {}\n");
-
-    injm()
-        .arg("check")
-        .arg("--input")
-        .arg(&input)
-        .assert()
-        .failure()
-        .stderr(
-            predicate::str::contains("required arguments were not provided")
-                .and(predicate::str::contains("--output")),
-        );
+        .stderr(predicate::str::contains(
+            "required arguments were not provided",
+        ));
 }
 
 #[test]
@@ -766,9 +717,7 @@ content
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&output)
         .assert()
         .failure()
@@ -788,9 +737,7 @@ fn check_reports_end_marker_without_begin() {
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&output)
         .assert()
         .failure()
@@ -816,9 +763,7 @@ content without an end marker
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&output)
         .assert()
         .failure()
@@ -852,9 +797,7 @@ actual
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&output)
         .assert()
         .failure()
@@ -885,9 +828,7 @@ println!("actual");
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&output)
         .arg("--diff")
         .assert()
@@ -933,9 +874,7 @@ println!("hello");
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&output)
         .arg("--diff")
         .assert()
@@ -970,9 +909,7 @@ different default content
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&output)
         .arg("--diff")
         .assert()
@@ -1017,9 +954,7 @@ actual second
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&output)
         .arg("--diff")
         .assert()
@@ -1082,9 +1017,7 @@ fn generated() {
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&output)
         .arg("--diff")
         .assert()
@@ -1123,9 +1056,7 @@ content
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input)
-        .arg("--output")
         .arg(&output)
         .arg("--diff")
         .assert()
@@ -1167,10 +1098,8 @@ first
 
     injm()
         .arg("check")
-        .arg("--input")
         .arg(&input_one)
         .arg(&input_two)
-        .arg("--output")
         .arg(&output)
         .arg("--diff")
         .assert()

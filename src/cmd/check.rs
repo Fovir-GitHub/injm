@@ -1,23 +1,27 @@
 use crate::{
     checker::check_sync,
     cli::CheckArgs,
-    cmd::utils::into_blocks,
     output::print_block_diff,
     parser::parse_patterns,
+    types::{BlockRole, MarkerBlock},
     validator::{validate_duplicated_input_ids, validate_missing_ids},
 };
 use anyhow::{Result, bail};
 
 pub fn run(args: CheckArgs) -> Result<()> {
-    let input_files = parse_patterns(&args.input)?;
-    let output_files = parse_patterns(&args.output)?;
+    let files = parse_patterns(&args.files)?;
 
-    validate_missing_ids(&output_files, &input_files)?;
+    validate_missing_ids(&files, &files)?;
 
-    let input_blocks = into_blocks(input_files);
-    validate_duplicated_input_ids(&input_blocks)?;
+    let input_blocks: Vec<&MarkerBlock> = files
+        .iter()
+        .flat_map(|file| file.blocks.iter())
+        .filter(|block| matches!(&block.role, BlockRole::Input { .. }))
+        .collect();
 
-    let issues = check_sync(&input_blocks, &output_files);
+    validate_duplicated_input_ids(input_blocks.iter().copied())?;
+
+    let issues = check_sync(&input_blocks, &files);
     if issues.is_empty() {
         println!("all marker blocks are synchronized");
         return Ok(());

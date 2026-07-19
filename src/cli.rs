@@ -40,7 +40,7 @@ pub struct InjectArgs {
 
 #[derive(Args)]
 pub struct ListArgs {
-    #[arg(num_args=1..)]
+    #[arg(num_args = 1..)]
     pub input: Vec<String>,
 
     #[arg(long, short, default_value = "table")]
@@ -49,11 +49,8 @@ pub struct ListArgs {
 
 #[derive(Args)]
 pub struct CheckArgs {
-    #[arg(short, long, required = true, num_args = 1..)]
-    pub input: Vec<String>,
-
-    #[arg(short, long, required = true, num_args = 1..)]
-    pub output: Vec<String>,
+    #[arg(required = true, num_args = 1..)]
+    pub files: Vec<String>,
 
     #[arg(long)]
     pub diff: bool,

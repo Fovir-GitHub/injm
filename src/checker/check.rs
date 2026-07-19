@@ -11,7 +11,7 @@ pub struct SyncIssue {
 }
 
 pub(crate) fn check_sync(
-    input_blocks: &[MarkerBlock],
+    input_blocks: &[&MarkerBlock],
     output_files: &[ParsedFile],
 ) -> Vec<SyncIssue> {
     let mut issues = Vec::new();
