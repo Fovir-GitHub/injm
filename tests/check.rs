@@ -682,17 +682,6 @@ content
 }
 
 #[test]
-fn check_requires_argument() {
-    injm()
-        .arg("check")
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            "required arguments were not provided",
-        ));
-}
-
-#[test]
 fn check_reports_nested_marker_parser_error() {
     let temp = TempDir::new().unwrap();
 
@@ -1106,4 +1095,128 @@ first
         .failure()
         .stdout(predicate::str::is_empty())
         .stderr(predicate::str::contains("duplicated input id `hello`"));
+}
+
+#[test]
+fn check_falls_back_to_current_directory_when_no_args_given() {
+    let temp = TempDir::new().unwrap();
+
+    write_file(
+        temp.path(),
+        "input.rs",
+        r#"// injm begin <hello
+expected
+// injm end
+"#,
+    );
+
+    write_file(
+        temp.path(),
+        "output.rs",
+        r#"// injm begin >hello
+expected
+// injm end
+"#,
+    );
+
+    injm()
+        .arg("check")
+        .current_dir(temp.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::is_empty());
+}
+
+#[test]
+fn check_falls_back_to_current_directory_and_reports_out_of_sync() {
+    let temp = TempDir::new().unwrap();
+
+    write_file(
+        temp.path(),
+        "input.rs",
+        r#"// injm begin <hello
+expected
+// injm end
+"#,
+    );
+
+    write_file(
+        temp.path(),
+        "output.rs",
+        r#"// injm begin >hello
+actual
+// injm end
+"#,
+    );
+
+    injm()
+        .arg("check")
+        .current_dir(temp.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "output block `hello` is out of sync",
+        ));
+}
+
+#[test]
+fn check_falls_back_to_current_directory_recursively() {
+    let temp = TempDir::new().unwrap();
+
+    write_file(
+        temp.path(),
+        "src/input.rs",
+        r#"// injm begin <hello
+expected
+// injm end
+"#,
+    );
+
+    write_file(
+        temp.path(),
+        "src/output.rs",
+        r#"// injm begin >hello
+expected
+// injm end
+"#,
+    );
+
+    injm()
+        .arg("check")
+        .current_dir(temp.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::is_empty());
+}
+
+#[test]
+fn check_falls_back_to_current_directory_recursively_reports_out_of_sync() {
+    let temp = TempDir::new().unwrap();
+
+    write_file(
+        temp.path(),
+        "nested/deep/input.rs",
+        r#"// injm begin <hello
+expected
+// injm end
+"#,
+    );
+
+    write_file(
+        temp.path(),
+        "nested/deep/output.rs",
+        r#"// injm begin >hello
+actual
+// injm end
+"#,
+    );
+
+    injm()
+        .arg("check")
+        .current_dir(temp.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "output block `hello` is out of sync",
+        ));
 }

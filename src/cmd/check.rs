@@ -9,7 +9,13 @@ use crate::{
 use anyhow::{Result, bail};
 
 pub fn run(args: CheckArgs) -> Result<()> {
-    let files = parse_patterns(&args.files)?;
+    let pattern = if args.files.is_empty() {
+        vec![".".to_string()]
+    } else {
+        args.files
+    };
+
+    let files = parse_patterns(&pattern)?;
 
     validate_missing_ids(&files, &files)?;
 

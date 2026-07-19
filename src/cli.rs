@@ -49,7 +49,7 @@ pub struct ListArgs {
 
 #[derive(Args)]
 pub struct CheckArgs {
-    #[arg(required = true, num_args = 1..)]
+    #[arg(num_args = 1..)]
     pub files: Vec<String>,
 
     #[arg(long)]
