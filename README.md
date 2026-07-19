@@ -17,6 +17,7 @@ A CLI tool that injects content into marked regions in source files.
   - [Multiple Files and Globs](#multiple-files-and-globs)
   - [List Markers](#list-markers)
   - [Dry Run](#dry-run)
+- [Check](#check)
 - [Supported Languages](#supported-languages)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -214,6 +215,41 @@ Preview the result without writing to the file:
 ```bash
 cat src.txt | injm inject --output dest.rs --dry-run
 ```
+
+To see a unified diff of what would change instead of the full file, add `--diff`:
+
+```bash
+cat src.txt | injm inject --output dest.rs --dry-run --diff
+```
+
+## Check
+
+Verify that all output blocks (`>id`) contain the same content as their matching input blocks (`<id`):
+
+```bash
+injm check src/main.rs
+```
+
+If all blocks are synchronized, `injm check` exits 0 and prints:
+
+```
+all marker blocks are synchronized
+```
+
+If any are out of sync, it exits non-zero and lists each mismatch:
+
+```
+src/main.rs:12-14: output block `hello` is out of sync
+```
+
+To see a unified diff of what each out-of-sync block should contain, use
+`--diff`:
+
+```bash
+injm check src/main.rs --diff
+```
+
+Accepts files, globs, or directories as arguments. Falls back to current directory when no argument is provided.
 
 ## Supported Languages
 
