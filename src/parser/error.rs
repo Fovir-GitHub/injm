@@ -10,7 +10,7 @@ pub(crate) enum ParserError {
     Process(#[from] tree_sitter_language_pack::Error),
 
     #[error(transparent)]
-    Checker(#[from] crate::checker::CheckerError),
+    Checker(#[from] crate::validator::ValidatorError),
 
     #[error(transparent)]
     Io(#[from] std::io::Error),
@@ -28,7 +28,10 @@ pub(crate) enum ParserError {
     NestedMarker { line: usize, path: PathBuf },
 
     #[error("found `injm end` without `injm begin` at line {line} of {}", path.display())]
-    UnclosedMarker { line: usize, path: PathBuf },
+    EndWithoutBegin { line: usize, path: PathBuf },
+
+    #[error("found `injm begin` without `injm end` at line {line} of {}", path.display())]
+    BeginWithoutEnd { line: usize, path: PathBuf },
 
     #[error("found both input and output ID: {comment}")]
     BothInputOutputMarker { comment: String },

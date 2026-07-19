@@ -5,6 +5,7 @@ mod injector;
 mod output;
 mod parser;
 mod types;
+mod validator;
 
 use clap::Parser;
 
@@ -14,5 +15,6 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         cli::Commands::Inject(args) => cmd::inject::run(args),
         cli::Commands::List(args) => cmd::list::run(args),
+        cli::Commands::Check(args) => cmd::check::run(args),
     }
 }

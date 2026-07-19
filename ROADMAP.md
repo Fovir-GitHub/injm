@@ -106,15 +106,15 @@ Synchronize directories.
 
 Improve preview and verification.
 
-- [ ] Add check mode
-- [ ] Improve error messages (Show line numbers of mismatched markers)
-- [ ] Return non-zero exit code when synchronization is needed
-- [ ] Show unified diff output
+- [x] Add check mode
+- [x] Improve error messages (Show line numbers of mismatched markers)
+- [x] Return non-zero exit code when synchronization is needed
+- [x] Show unified diff output
 
 Example:
 
 ```bash
-injm check -i src -o docs
+injm check src/ docs/
 ```
 
 Perfect for CI.

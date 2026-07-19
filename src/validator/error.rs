@@ -2,10 +2,10 @@ use std::path::PathBuf;
 
 use thiserror::Error;
 
-pub(crate) type Result<T> = std::result::Result<T, CheckerError>;
+pub(crate) type Result<T> = std::result::Result<T, ValidatorError>;
 
 #[derive(Debug, Error)]
-pub(crate) enum CheckerError {
+pub(crate) enum ValidatorError {
     #[error("file does not exist: {}", path.display())]
     FileNotExist { path: PathBuf },
 

@@ -1,22 +1,16 @@
 use std::io::Write;
 use std::process::Command;
 
-fn injm_bin_list() -> Command {
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_injm"));
-    cmd.arg("list");
-    cmd
-}
-
 fn injm_bin_inject() -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_injm"));
     cmd.arg("inject");
     cmd
 }
 
-fn inject_stdin(path: &std::path::Path, input: &[u8]) -> std::process::ExitStatus {
+fn inject_stdin(pattern: &str, input: &[u8]) -> std::process::ExitStatus {
     let mut child = injm_bin_inject()
         .arg("--output")
-        .arg(path)
+        .arg(pattern)
         .stdin(std::process::Stdio::piped())
         .spawn()
         .unwrap();
@@ -31,13 +25,6 @@ fn test_basic_injection() {
     writeln!(f, "    // injm begin").unwrap();
     writeln!(f, "    // injm end").unwrap();
     writeln!(f, "}}").unwrap();
-
-    let _output = injm_bin_inject()
-        .arg("--output")
-        .arg(f.path())
-        .stdin(std::process::Stdio::piped())
-        .output()
-        .unwrap();
 
     let mut child = injm_bin_inject()
         .arg("--output")
@@ -353,7 +340,7 @@ fn test_unclosed_marker_returns_error() {
     writeln!(f, "    // injm begin").unwrap();
     writeln!(f, "}}").unwrap();
 
-    let status = inject_stdin(f.path(), b"x");
+    let status = inject_stdin(f.path().to_str().unwrap(), b"x");
     assert!(!status.success());
 }
 
@@ -380,8 +367,8 @@ fn test_reinjection_replaces_content() {
     writeln!(f, "// injm begin").unwrap();
     writeln!(f, "// injm end").unwrap();
 
-    assert!(inject_stdin(f.path(), b"first content").success());
-    assert!(inject_stdin(f.path(), b"second content").success());
+    assert!(inject_stdin(f.path().to_str().unwrap(), b"first content").success());
+    assert!(inject_stdin(f.path().to_str().unwrap(), b"second content").success());
 
     let result = std::fs::read_to_string(f.path()).unwrap();
     assert!(result.contains("second content"));
@@ -399,18 +386,12 @@ fn test_glob_multiple_output_files() {
         std::fs::write(&path, "// injm begin\n// injm end\n").unwrap();
     }
 
-    let status = injm_bin_inject()
-        .arg("--output")
-        .arg(dir.path().join("*.rs"))
-        .stdin(std::process::Stdio::piped())
-        .status()
-        .unwrap();
-
+    let status = inject_stdin(dir.path().join("*.rs").to_str().unwrap(), b"new content");
     assert!(status.success());
 
     for name in ["a.rs", "b.rs"] {
         let result = std::fs::read_to_string(dir.path().join(name)).unwrap();
-        assert!(result.contains("// injm begin"));
+        assert!(result.contains("new content"));
     }
 }
 
@@ -522,14 +503,14 @@ fn test_recursive_glob() {
     )
     .unwrap();
 
-    let status = injm_bin_inject()
-        .arg("--output")
-        .arg(dir.path().join("**/*.rs"))
-        .stdin(std::process::Stdio::piped())
-        .status()
-        .unwrap();
+    let status = inject_stdin(dir.path().join("**/*.rs").to_str().unwrap(), b"new content");
 
     assert!(status.success());
+
+    for name in ["a.rs", "src/c.rs"] {
+        let result = std::fs::read_to_string(dir.path().join(name)).unwrap();
+        assert!(result.contains("new content"));
+    }
 }
 
 #[test]
@@ -820,181 +801,11 @@ fn test_inject_same_file_missing_input_id_returns_error() {
 }
 
 #[test]
-fn test_list_single_file() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("test.rs");
-    std::fs::write(
-        &path,
-        "// injm begin <input_id\ncontent\n// injm end\n// injm begin >output_id\ncontent\n// injm end\n",
-    )
-    .unwrap();
+fn test_empty_stdin_error() {
+    let mut f = tempfile::NamedTempFile::with_suffix(".rs").unwrap();
+    writeln!(f, "// injm begin").unwrap();
+    writeln!(f, "// injm end").unwrap();
 
-    let output = injm_bin_list().arg(&path).output().unwrap();
-    assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("input_id"));
-    assert!(stdout.contains("output_id"));
-    assert!(stdout.contains("input "));
-    assert!(stdout.contains("output"));
-}
-
-#[test]
-fn test_list_json_format() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("test.rs");
-    std::fs::write(&path, "// injm begin <my_id\ncontent\n// injm end\n").unwrap();
-
-    let output = injm_bin_list()
-        .arg("--format")
-        .arg("json")
-        .arg(&path)
-        .output()
-        .unwrap();
-
-    assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains(r#""id": "my_id""#));
-    assert!(stdout.contains(r#""marker_type": "input""#));
-    assert!(stdout.contains(&format!(r#""file": "{}""#, path.to_string_lossy())));
-}
-
-#[test]
-fn test_list_no_markers() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("test.rs");
-    std::fs::write(&path, "fn main() {}\n").unwrap();
-
-    let output = injm_bin_list().arg(&path).output().unwrap();
-    assert!(output.status.success());
-}
-
-#[test]
-fn test_list_short_flag() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("test.rs");
-    std::fs::write(&path, "// injm begin <my_id\ncontent\n// injm end\n").unwrap();
-
-    let output = injm_bin_list()
-        .arg("-f")
-        .arg("json")
-        .arg(&path)
-        .output()
-        .unwrap();
-
-    assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains(r#""id": "my_id""#));
-}
-
-#[test]
-fn test_list_binary_file_returns_error() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("test.rs");
-    std::fs::write(&path, [0x00, 0x01, 0x02, 0x03]).unwrap();
-
-    let status = injm_bin_list().arg(&path).status().unwrap();
+    let status = inject_stdin(f.path().to_str().unwrap(), b"");
     assert!(!status.success());
-}
-
-#[test]
-fn test_list_file_not_exist_returns_error() {
-    let dir = tempfile::tempdir().unwrap();
-    let status = injm_bin_list()
-        .arg(dir.path().join("not_exist.rs"))
-        .status()
-        .unwrap();
-    assert!(!status.success());
-}
-
-#[test]
-fn test_list_anonymous_block_produces_no_rows() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("test.rs");
-    std::fs::write(&path, "// injm begin\ncontent\n// injm end\n").unwrap();
-
-    let output = injm_bin_list()
-        .arg(&path)
-        .arg("--format")
-        .arg("json")
-        .output()
-        .unwrap();
-
-    assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let rows: Vec<serde_json::Value> = serde_json::from_str(&stdout).unwrap();
-    assert!(rows.is_empty());
-}
-
-#[test]
-fn test_list_empty_file() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("empty.rs");
-    std::fs::write(&path, "").unwrap();
-
-    let output = injm_bin_list().arg(&path).output().unwrap();
-    assert!(output.status.success());
-}
-
-#[test]
-fn test_list_no_match_returns_error() {
-    let dir = tempfile::tempdir().unwrap();
-
-    let status = injm_bin_list()
-        .arg(dir.path().join("*.rs"))
-        .status()
-        .unwrap();
-
-    assert!(!status.success());
-}
-
-#[test]
-fn test_list_multiple_patterns() {
-    let dir = tempfile::tempdir().unwrap();
-    std::fs::write(
-        dir.path().join("a.rs"),
-        "// injm begin <id_a\ncontent\n// injm end\n",
-    )
-    .unwrap();
-    std::fs::write(
-        dir.path().join("b.rs"),
-        "// injm begin <id_b\ncontent\n// injm end\n",
-    )
-    .unwrap();
-
-    let output = injm_bin_list()
-        .arg(dir.path().join("a.rs"))
-        .arg(dir.path().join("b.rs"))
-        .output()
-        .unwrap();
-
-    assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("id_a"));
-    assert!(stdout.contains("id_b"));
-}
-
-#[test]
-fn test_list_directory_recursive() {
-    let dir = tempfile::tempdir().unwrap();
-    std::fs::create_dir_all(dir.path().join("sub")).unwrap();
-    std::fs::write(
-        dir.path().join("a.rs"),
-        "// injm begin <id_a\ncontent\n// injm end\n",
-    )
-    .unwrap();
-    std::fs::write(
-        dir.path().join("sub/b.rs"),
-        "// injm begin <id_b\ncontent\n// injm end\n",
-    )
-    .unwrap();
-
-    let output = injm_bin_list()
-        .arg(dir.path().to_string_lossy().as_ref())
-        .output()
-        .unwrap();
-
-    assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("id_a"));
-    assert!(stdout.contains("id_b"));
 }
